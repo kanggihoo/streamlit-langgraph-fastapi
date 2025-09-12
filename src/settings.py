@@ -39,7 +39,7 @@ class Settings(BaseSettings):
         extra="ignore",
         )
     
-    MODE : Annotated[str, "Fastapi Server model로 reload 할때 사용"] = Field(default="dev")
+    MODE : Annotated[str, "Fastapi Server model로 reload 할때 사용"] = Field(default="")
     HOST : Annotated[str, "Fastapi Server host"] = Field(default="0.0.0.0")
     PORT : Annotated[int, "Fastapi Server port"] = Field(default=8001)
     AGENT_ENDPOINT : Annotated[str, "Fastapi Server agent endpoint"] = Field(default="/api/langgraph")
@@ -50,7 +50,7 @@ class Settings(BaseSettings):
     OPENROUTER_API_KEY : SecretStr | None = None
     
     #기본적으로 사용할 LLM 모델 및 사용 가능한 LLM 모델 집합
-    DEFAULT_LLM_MODEL : AllModelEnum | None = None
+    DEFAULT_LLM_MODEL : AllModelEnum  = GoogleModelName.GEMINI_20_FLASH_LITE
     AVAILABLE_LLM_MODELS : Annotated[set[AllModelEnum], "사용 가능한 모든 LLM 모델 집합"] = Field(default_factory=set)
 
     # Langsmith 
@@ -67,7 +67,7 @@ class Settings(BaseSettings):
     # SQLite 데이터베이스 파일 경로
     SQLITE_DB_PATH: str = "checkpoints.db"
 
-    ENV : Annotated[EnvType, "Environment type"] = EnvType.LOCAL
+    DB_ENV : Annotated[EnvType, "Environment type"] = EnvType.LOCAL
     POSTGRES_USER: str | None = None
     POSTGRES_PASSWORD: SecretStr | None = None
     POSTGRES_HOST: str | None = None
@@ -122,7 +122,7 @@ class Settings(BaseSettings):
     
     def is_local(self) -> bool:
         """Check if the server is in local environment"""
-        return self.ENV == EnvType.LOCAL
+        return self.DB_ENV == EnvType.LOCAL
     
 
 settings = Settings()
