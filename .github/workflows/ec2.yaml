@@ -10,12 +10,12 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     env:
-        DB_ENV="cloud"
-        POSTGRES_USER="postgres.mrnvymnblankzratdavt"
+        DB_ENV: "cloud"
+        POSTGRES_USER: "postgres.mrnvymnblankzratdavt"
         POSTGRES_HOST="aws-1-ap-northeast-2.pooler.supabase.com"
-        POSTGRES_PORT="6543"
-        POSTGRES_DB="postgres"
-        HOST="3.34.179.28"
+        POSTGRES_PORT: "6543"
+        POSTGRES_DB: "postgres"
+        HOST: "3.34.179.28"
 
     steps:
     - name: Checkout code
