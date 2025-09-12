@@ -175,8 +175,8 @@ async def main() -> None:
                 [session.client.request.protocol, session.client.request.host, "", "", "", ""]
             )
             # if it's not localhost, switch to https by default
-            if not st_base_url.startswith("https") and "localhost" not in st_base_url:
-                st_base_url = st_base_url.replace("http", "https")
+            # if not st_base_url.startswith("https") and "localhost" not in st_base_url:
+            #     st_base_url = st_base_url.replace("http", "https")
             # Include both thread_id and user_id in the URL for sharing to maintain user identity
             chat_url = (
                 f"{st_base_url}?thread_id={st.session_state.thread_id}&{USER_ID_COOKIE}={user_id}&agent={agent_client.agent}"
