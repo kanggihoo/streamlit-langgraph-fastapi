@@ -24,15 +24,15 @@ jobs:
     - name: Deploy to EC2
       uses: appleboy/ssh-action@v1.0.0
       with:
-        host: ${{ secrets.AI_SERVER_EC2_HOST }}
-        username: ${{ secrets.AI_SERVER_EC2_USERNAME }}
-        key: ${{ secrets.AI_SERVER_EC2_SSH_KEY }}
+        host: ${{ secrets.LANGGRAPH_EC2_HOST }}
+        username: ${{ secrets.LANGGRAPH_EC2_USERNAME }}
+        key: ${{ secrets.LANGGRAPH_EC2_SSH_KEY }}
         script: |
 
 
             # --- 변수 설정 ---
             BRANCH_NAME="${{ github.ref_name }}"
-            HOME_DIR="/home/${{ secrets.AI_SERVER_EC2_USERNAME }}"
+            HOME_DIR="/home/${{ secrets.LANGGRAPH_EC2_USERNAME }}"
             PROJECT_DIR="${HOME_DIR}/SW-project"
             SERVICE_NAME="fastapi-app.service"
             REPO_URL="https://github.com/kanggihoo/streamlit-langgraph-fastapi.git"
