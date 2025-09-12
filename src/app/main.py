@@ -20,6 +20,7 @@ async def lifespan(app:FastAPI):
     try:
         # 모든 agent의 memory 초기화
         async with get_postgres_connection_pool() as pool:
+            logger.info("DB 연결 완료")
             checkpointer = AsyncPostgresSaver(pool)
             await checkpointer.setup()
             agent_names =  get_all_agent_info()

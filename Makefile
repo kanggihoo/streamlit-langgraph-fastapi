@@ -41,7 +41,6 @@ install:
 # 개발 모드 (의존성 설치 후 서버 실행)
 dev: install run-servers
 
-# EC2에서 서버 실행 (가상환경 활성화 후 순차 실행)
 run-ec2-servers: stop-ec2-servers
 	@echo "🚀 Starting servers on EC2..."
 	@echo "📁 Activating virtual environment and moving to project directory..."
