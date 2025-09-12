@@ -1,4 +1,4 @@
-name: Deploy FastAPI to EC2
+name: Deploy FastAPI and Streamlit to EC2
 
 on:
   push:
@@ -10,11 +10,12 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     env:
-        DB_ENV: "cloud"
-        POSTGRES_USER: "postgres.mrnvymnblankzratdavt"
-        POSTGRES_HOST: "aws-1-ap-northeast-2.pooler.supabase.com"
-        POSTGRES_PORT: "6543"
-        POSTGRES_DB: "postgres"
+      DB_ENV: "cloud"
+      POSTGRES_USER: "postgres.mrnvymnblankzratdavt"
+      POSTGRES_HOST: "aws-1-ap-northeast-2.pooler.supabase.com"
+      POSTGRES_PORT: "6543"
+      POSTGRES_DB: "postgres"
+      HOST: "0.0.0.0" # HOST 변수 추가
 
     steps:
     - name: Checkout code
@@ -27,125 +28,173 @@ jobs:
         username: ${{ secrets.LANGGRAPH_EC2_USERNAME }}
         key: ${{ secrets.LANGGRAPH_EC2_SSH_KEY }}
         script: |
+          # --- 변수 설정 ---
+          BRANCH_NAME="${{ github.ref_name }}"
+          HOME_DIR="/home/${{ secrets.LANGGRAPH_EC2_USERNAME }}"
+          PROJECT_DIR="${HOME_DIR}/SW-project"
+          REPO_URL="https://github.com/kanggihoo/streamlit-langgraph-fastapi.git"
+          FASTAPI_SERVICE_NAME="fastapi-server.service"
+          STREAMLIT_SERVICE_NAME="streamlit-server.service"
+          FASTAPI_PORT=8001
+          STREAMLIT_PORT=8501
+
+          echo "================================================="
+          echo "🚀 듀얼 서버 배포 시작: $(date)"
+          echo "BRANCH: ${BRANCH_NAME}"
+          echo "PROJECT_DIR: ${PROJECT_DIR}"
+          echo "================================================="
+
+          # --- Git 설치 확인 및 설치 (필요 시) ---
+          if ! command -v git &> /dev/null; then
+              echo "git이 설치되어 있지 않습니다. 설치를 진행합니다..."
+              sudo yum update -y && sudo yum install git -y
+              echo "git 설치 완료."
+          else
+              echo "git이 이미 설치되어 있습니다."
+          fi
+              
+          # --- Git 프로젝트 클론 또는 업데이트 ---
+          if [ ! -d "$PROJECT_DIR/.git" ]; then
+              echo "📁 프로젝트가 존재하지 않습니다. 새로 clone 합니다..."
+              rm -rf "$PROJECT_DIR" # 기존 디렉토리 정리
+              git clone "${REPO_URL}" "$PROJECT_DIR"
+          else
+              echo "📁 기존 프로젝트 디렉토리를 업데이트합니다..."
+          fi
+    
+          cd "$PROJECT_DIR" || { echo "❌ 프로젝트 디렉토리로 이동 실패"; exit 1; }
+          git pull origin "${BRANCH_NAME}"
+          echo "🔄 Git 저장소를 최신 상태로 업데이트 완료."
+
+          # --- uv 설치 및 Python 가상환경 설정 ---
+          if ! command -v uv &> /dev/null; then
+              echo "uv가 설치되어 있지 않습니다. 설치를 진행합니다..."
+              curl -LsSf https://astral.sh/uv/install.sh | sh
+              export PATH="$HOME/.local/bin:$PATH"
+              echo "uv 설치 및 PATH 설정 완료."
+          else
+              echo "uv가 이미 설치되어 있습니다."
+          fi
+          
+          if [ ! -d ".venv" ]; then
+              echo "📦 Python 가상환경을 생성합니다..."
+              uv venv
+          fi
+          echo "🐍 가상환경 활성화 및 의존성 설치/동기화..."
+          source .venv/bin/activate
+          uv sync
+          echo "✅ 가상환경 및 의존성 설정 완료."
+
+          # --- 기존 서비스 중지 및 포트 정리 ---
+          echo "🔄 기존 서비스를 중지하고 포트를 정리합니다..."
+          sudo systemctl stop ${FASTAPI_SERVICE_NAME} || true
+          sudo systemctl stop ${STREAMLIT_SERVICE_NAME} || true
+          sudo lsof -ti:${FASTAPI_PORT} | xargs -r sudo kill -9 || true
+          sudo lsof -ti:${STREAMLIT_PORT} | xargs -r sudo kill -9 || true
+          sleep 3
+          echo "✅ 서비스 중지 및 포트 정리 완료."
+
+          # --- 환경 변수 (.env) 파일 생성/업데이트 ---
+          echo "🔑 환경 변수 파일(.env)을 생성/업데이트합니다..."
+          cat << EOF > "$PROJECT_DIR/.env"
+          OPENAI_API_KEY="${{ secrets.OPENAI_API_KEY }}"
+          GOOGLE_API_KEY="${{ secrets.GOOGLE_API_KEY }}"
+          OPENROUTER_API_KEY="${{ secrets.OPENROUTER_API_KEY }}"
+          POSTGRES_PASSWORD="${{ secrets.POSTGRES_PASSWORD }}"
+
+          DB_ENV="${{ env.DB_ENV }}"
+          POSTGRES_USER="${{ env.POSTGRES_USER }}"
+          POSTGRES_HOST="${{ env.POSTGRES_HOST }}"
+          POSTGRES_PORT="${{ env.POSTGRES_PORT }}"
+          POSTGRES_DB="${{ env.POSTGRES_DB }}"
+          HOST="${{ env.HOST }}"
+          EOF
+          chmod 600 "$PROJECT_DIR/.env"
+          echo "✅ 환경 변수 파일 생성 완료."
+          
+          # --- FastAPI systemd 서비스 파일 생성 ---
+          echo "⚙️ FastAPI systemd 서비스 파일을 생성합니다..."
+          cat << EOF > "${HOME_DIR}/temp-fastapi.service"
+          [Unit]
+          Description=FastAPI Server for SW-project
+          After=network.target
+
+          [Service]
+          User=${{ secrets.LANGGRAPH_EC2_USERNAME }}
+          Group=$(id -gn ${{ secrets.LANGGRAPH_EC2_USERNAME }})
+          WorkingDirectory=${PROJECT_DIR}
+          EnvironmentFile=${PROJECT_DIR}/.env
+          ExecStart=${PROJECT_DIR}/.venv/bin/uv run python3 src/run_server.py
+          Restart=always
+          RestartSec=10
+
+          [Install]
+          WantedBy=multi-user.target
+          EOF
+          sudo mv "${HOME_DIR}/temp-fastapi.service" "/etc/systemd/system/${FASTAPI_SERVICE_NAME}"
+          sudo chmod 644 "/etc/systemd/system/${FASTAPI_SERVICE_NAME}"
+          echo "✅ FastAPI 서비스 파일 생성 완료."
+
+          # --- Streamlit systemd 서비스 파일 생성 ---
+          echo "🎨 Streamlit systemd 서비스 파일을 생성합니다..."
+          cat << EOF > "${HOME_DIR}/temp-streamlit.service"
+          [Unit]
+          Description=Streamlit Server for SW-project
+          After=network.target
+
+          [Service]
+          User=${{ secrets.LANGGRAPH_EC2_USERNAME }}
+          Group=$(id -gn ${{ secrets.LANGGRAPH_EC2_USERNAME }})
+          WorkingDirectory=${PROJECT_DIR}
+          EnvironmentFile=${PROJECT_DIR}/.env
+          ExecStart=${PROJECT_DIR}/.venv/bin/streamlit run src/streamlit_app.py --server.port ${STREAMLIT_PORT} --server.headless true
+          Restart=always
+          RestartSec=10
+
+          [Install]
+          WantedBy=multi-user.target
+          EOF
+          sudo mv "${HOME_DIR}/temp-streamlit.service" "/etc/systemd/system/${STREAMLIT_SERVICE_NAME}"
+          sudo chmod 644 "/etc/systemd/system/${STREAMLIT_SERVICE_NAME}"
+          echo "✅ Streamlit 서비스 파일 생성 완료."
+
+          # --- systemd 서비스 재로드, 활성화 및 재시작 ---
+          echo "🔄 systemd 데몬을 재로드하고 두 서비스를 활성화 및 재시작합니다..."
+          sudo systemctl daemon-reload
+          sudo systemctl enable ${FASTAPI_SERVICE_NAME}
+          sudo systemctl enable ${STREAMLIT_SERVICE_NAME}
+          sudo systemctl restart ${FASTAPI_SERVICE_NAME}
+          sudo systemctl restart ${STREAMLIT_SERVICE_NAME}
+          echo "✅ 두 서비스에 대한 재시작 명령을 실행했습니다."
+
+          # --- 서비스 상태 확인 ---
+          sleep 5
+          echo "🔍 서비스 상태를 확인합니다..."
+          
+          # FastAPI 서버 상태 확인
+          if sudo systemctl is-active --quiet ${FASTAPI_SERVICE_NAME}; then
+              echo "🎉 (1/2) FastAPI 서버가 성공적으로 시작되었습니다!"
+              echo "   - 주소: http://${{ secrets.LANGGRAPH_EC2_HOST }}:${FASTAPI_PORT}"
+          else
+              echo "❌ (1/2) FastAPI 서버 시작에 실패했습니다."
+              echo "--- FastAPI 최근 로그 50줄 ---"
+              sudo journalctl -u ${FASTAPI_SERVICE_NAME} --no-pager -n 50
+              exit 1
+          fi
+
+          # Streamlit 서버 상태 확인
+          if sudo systemctl is-active --quiet ${STREAMLIT_SERVICE_NAME}; then
+              echo "🎉 (2/2) Streamlit 서버가 성공적으로 시작되었습니다!"
+              echo "   - 주소: http://${{ secrets.LANGGRAPH_EC2_HOST }}:${STREAMLIT_PORT}"
+          else
+              echo "❌ (2/2) Streamlit 서버 시작에 실패했습니다."
+              echo "--- Streamlit 최근 로그 50줄 ---"
+              sudo journalctl -u ${STREAMLIT_SERVICE_NAME} --no-pager -n 50
+              exit 1
+          fi
+
+          echo "================================================="
+          echo "✅ 모든 배포가 성공적으로 완료되었습니다: $(date)"
+          echo "================================================="
 
 
-            # --- 변수 설정 ---
-            BRANCH_NAME="${{ github.ref_name }}"
-            HOME_DIR="/home/${{ secrets.LANGGRAPH_EC2_USERNAME }}"
-            PROJECT_DIR="${HOME_DIR}/SW-project"
-            SERVICE_NAME="fastapi-app.service"
-            REPO_URL="https://github.com/kanggihoo/streamlit-langgraph-fastapi.git"
-
-            echo "================================================="
-            echo "🚀 배포 시작: $(date)"
-            echo "BRANCH: ${BRANCH_NAME}"
-            echo "PROJECT_DIR: ${PROJECT_DIR}"
-            echo "================================================="
-
-           
-
-            # Git 설치 확인 및 설치 (Amazon Linux용)
-            if ! command -v git &> /dev/null; then
-                echo "git이 설치되어 있지 않습니다. 설치를 진행합니다..."
-                sudo yum update -y # 패키지 목록 업데이트 (Amazon Linux)
-                sudo yum install git -y # git 설치 (Amazon Linux)
-                echo "git 설치 완료."
-            else
-                echo "git이 이미 설치되어 있습니다."
-            fi
-                
-            # --- Git 프로젝트 클론 또는 업데이트 ---
-            if [ ! -d "$PROJECT_DIR/.git" ]; then
-                echo "📁 프로젝트가 존재하지 않거나 Git 저장소가 아닙니다. 새로 clone 합니다..."
-                rm -rf "$PROJECT_DIR" # 기존 디렉토리가 있다면 정리
-                git clone "${REPO_URL}" "$PROJECT_DIR"
-            else
-                echo "📁 기존 프로젝트 디렉토리를 업데이트합니다..."
-            fi
-      
-            # --- 프로젝트 디렉토리로 이동 ---
-            cd "$PROJECT_DIR" || { echo "❌ 프로젝트 디렉토리로 이동 실패"; exit 1; }
-            
-            echo "현재 작업 디렉토리: $(pwd)"
-
-            # --- Git 브랜치 업데이트 ---
-            echo "🔄 Git 저장소를 최신 상태로 업데이트합니다..."
-            git pull origin "${BRANCH_NAME}"
-
-
-            # --- uv 설치 및 Python 가상환경 설정 ---
-            if ! command -v uv &> /dev/null; then
-                echo "uv가 설치되어 있지 않습니다. 설치를 진행합니다..."
-                curl -LsSf https://astral.sh/uv/install.sh | sh
-                export PATH="$HOME/.local/bin:$PATH"
-                echo "uv 설치 및 PATH 설정 완료."
-            else
-                echo "uv가 이미 설치되어 있습니다."
-            fi
-            
-            cd $PROJECT_DIR # 프로젝트 디렉토리로 이동 확인
-            # Python 가상환경 확인 및 생성
-            if [ ! -d ".venv" ]; then
-                echo "📦 Python 가상환경을 생성합니다..."
-                uv venv
-            fi
-            echo "가상환경을 실행"
-            source .venv/bin/activate
-            uv sync
-            echo "가상환경 및 의존성 설치 완료."
-
-            echo "🔄 기존 서비스를 중지합니다..."
-
-                 
-            # --- 기존 서비스 중지 ---
-            echo "🔄 기존 서비스를 중지합니다..."
-            if sudo systemctl is-active --quiet ${SERVICE_NAME}; then
-                sudo systemctl stop ${SERVICE_NAME}
-                echo "서비스 ${SERVICE_NAME} 중지 완료."
-            else
-                echo "서비스 ${SERVICE_NAME}는 실행 중이 아니었습니다."
-            fi
-            # 포트 정리 (안전장치)
-            sudo lsof -ti:8000 | xargs -r sudo kill -9 || true
-            sleep 3
-
-         
-            # --- 환경 변수 (.env) 파일 생성/업데이트 ---
-            echo "환경 변수 파일을 생성/업데이트 중..."
-            # .env 파일 생성 또는 덮어쓰기
-            cat << EOF > "$PROJECT_DIR/.env"
-            
-            
-            OPENAI_API_KEY="${{ secrets.OPENAI_API_KEY }}"
-            GOOGLE_API_KEY="${{ secrets.GOOGLE_API_KEY }}"
-            OPENROUTER_API_KEY="${{ secrets.OPENROUTER_API_KEY }}"
-            POSTGRES_PASSWORD="${{ secrets.POSTGRES_PASSWORD }}"
-
-            DB_ENV="${{ env.DB_ENV }}"
-            POSTGRES_USER="${{ env.POSTGRES_USER }}"
-            POSTGRES_HOST="${{ env.POSTGRES_HOST }}"
-            POSTGRES_PORT="${{ env.POSTGRES_PORT }}"
-            POSTGRES_DB="${{ env.POSTGRES_DB }}"
-            HOST="${{ env.HOST }}"
-            
-
-            # 필요하다면 여기에 추가 환경 변수를 정의하세요.
-            EOF
-            chmod 600 "$PROJECT_DIR/.env" # .env 파일 권한 설정 (소유자만 읽기/쓰기 가능)
-            echo "환경 변수 파일 생성/업데이트 및 권한 설정 완료."
-
-            # --- [DEBUG] 생성된 파일 및 디렉토리 확인 ---
-            echo "--- [DEBUG] 프로젝트 디렉토리 내용 ---"
-            ls -la "${PROJECT_DIR}"
-            echo "--- [DEBUG] .env 파일 내용 ---"
-            cat "${PROJECT_DIR}/.env"
-            echo "-----------------------------------"
-
-
-            # --- 서버 실행 ---
-            echo "🚀 서버를 시작합니다..."
-            make run-ec2-servers
-
-            echo "================================================="
-            echo "✅ 배포가 성공적으로 완료되었습니다: $(date)"
-            echo "================================================="
