@@ -2,6 +2,7 @@ from enum import StrEnum
 
 class SSETypes(StrEnum):
     """SSE 타입"""
+    STATUS = "status"
     MESSAGE = "message"
     TOKEN = "token"
     ERROR = "error"

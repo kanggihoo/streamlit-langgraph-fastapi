@@ -1,7 +1,5 @@
 # app/services/db_metadata_service.py
 from typing import Dict, List, Optional, Any
-import asyncio
-import psycopg
 from psycopg import AsyncConnection
 import logging
 from datetime import datetime, timezone
@@ -10,17 +8,15 @@ logger = logging.getLogger(__name__)
 
 class DatabaseMetadataService:
     """데이터베이스 메타데이터 및 서버 정보를 관리하는 서비스 클래스 (dict_row 지원)"""
+        
     
-    def __init__(self, connection: AsyncConnection):
-        self.connection = connection
-    
-    async def health_check(self) -> Dict[str, Any]:
+    async def health_check(self, connection: AsyncConnection) -> Dict[str, Any]:
         """데이터베이스 헬스체크"""
         try:
             start_time = datetime.now(timezone.utc)
             
             # 간단한 쿼리로 연결 확인
-            async with self.connection.cursor() as cursor:
+            async with connection.cursor() as cursor:
                 await cursor.execute("SELECT 1 as test_value")
                 result = await cursor.fetchone()
             
@@ -41,7 +37,7 @@ class DatabaseMetadataService:
                 "timestamp": datetime.now(timezone.utc).isoformat()
             }
     
-    async def get_connection_info(self) -> Dict[str, Any]:
+    async def get_connection_info(self, connection: AsyncConnection) -> Dict[str, Any]:
         """현재 연결 정보 조회"""
         try:
             queries = [
@@ -67,7 +63,7 @@ class DatabaseMetadataService:
             ]
             
             result = {}
-            async with self.connection.cursor() as cursor:
+            async with connection.cursor() as cursor:
                 for key, query in queries:
                     await cursor.execute(query)
                     row = await cursor.fetchone()
@@ -86,7 +82,7 @@ class DatabaseMetadataService:
             logger.error(f"Failed to get connection info: {e}")
             raise
     
-    async def get_database_info(self) -> Dict[str, Any]:
+    async def get_database_info(self, connection: AsyncConnection) -> Dict[str, Any]:
         """데이터베이스 기본 정보 조회"""
         try:
             queries = [
@@ -105,7 +101,7 @@ class DatabaseMetadataService:
             ]
             
             result = {}
-            async with self.connection.cursor() as cursor:
+            async with connection.cursor() as cursor:
                 for key, query in queries:
                     await cursor.execute(query)
                     row = await cursor.fetchone()
@@ -125,7 +121,7 @@ class DatabaseMetadataService:
             logger.error(f"Failed to get database info: {e}")
             raise
     
-    async def get_table_statistics(self) -> List[Dict[str, Any]]:
+    async def get_table_statistics(self, connection: AsyncConnection) -> List[Dict[str, Any]]:
         """테이블 통계 정보 조회"""
         try:
             query = """
@@ -144,7 +140,7 @@ class DatabaseMetadataService:
                 LIMIT 20
             """
             
-            async with self.connection.cursor() as cursor:
+            async with connection.cursor() as cursor:
                 await cursor.execute(query)
                 rows = await cursor.fetchall()
                 
@@ -165,7 +161,7 @@ class DatabaseMetadataService:
             logger.error(f"Failed to get table statistics: {e}")
             raise
     
-    async def get_database_size_info(self) -> Dict[str, Any]:
+    async def get_database_size_info(self, connection: AsyncConnection) -> Dict[str, Any]:
         """데이터베이스 크기 정보 조회"""
         try:
             # 단일 값 쿼리들
@@ -179,7 +175,7 @@ class DatabaseMetadataService:
             ]
             
             result = {}
-            async with self.connection.cursor() as cursor:
+            async with connection.cursor() as cursor:
                 # 단일 값 쿼리들 처리
                 for key, query in single_queries:
                     await cursor.execute(query)
@@ -211,4 +207,4 @@ class DatabaseMetadataService:
             raise
     
 
-    
+database_metadata_service = DatabaseMetadataService()

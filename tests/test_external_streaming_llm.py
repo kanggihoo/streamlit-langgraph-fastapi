@@ -109,6 +109,8 @@ def api_end_point():
 {'type': 'status', 'message': '전문가 분석 완료', 'step': 13}
 {'type': 'complete', 'data': {'matched_outfit': {'filename': '49bb3d7ef7dfbe3f087842dfc1b81e43', 'score': 0.7100000000000001, 's3_url': 'https://thefirsttake-combination.s3.ap-northeast-2.amazonaws.com/json/49bb3d7ef7dfbe3f087842dfc1b81e43.json', 'situations': ['소개팅', '비즈니스', '데이트', '면접', '직장/오피스', '첫 만남/소개팅']}, 'total_matches': 7, 'search_method': 'index', 'source': 's3_json_stream'}}
 
+=> 완료일때 type이 status랑 complete 두개 있는거 같은데 
+=> type "complete" 인 경우 data 필드에 있는게 front쪽에 전달할 내용들인건지? 
 '''
 
 

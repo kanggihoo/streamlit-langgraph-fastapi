@@ -24,8 +24,9 @@ class OpenAIModelName(StrEnum):
     GPT_4O = "gpt-4o"
 
 class OpenRouterModelName(StrEnum):
-    GPT_4O_MINI = "gpt-4o-mini"
-    GPT_4O = "gpt-4o"
+    OPENROUTER_GPT_4O_MINI = "gpt-4o-mini"
+    OPENROUTER_GPT_4O = "gpt-4o"
+    OPENROUTER_GEMINI_20_FLASH_LITE = "gemini-2.0-flash-lite"
 
 
 AllModelEnum: TypeAlias = (

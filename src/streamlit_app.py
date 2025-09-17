@@ -136,10 +136,16 @@ async def main() -> None:
         ""
         "AI agent service built with LangGraph, FastAPI and Streamlit"
         ""
-
+        #===============================================================
+        # 새로운 채팅 시작 버튼 (채팅 대화 내역, thread_id , status_containers 초기화)
+        #===============================================================
         if st.button(":material/chat: New Chat", use_container_width=True):
             st.session_state.messages = []
             st.session_state.thread_id = str(uuid.uuid4())
+
+            # StatusUpdate 컨테이너도 초기화
+            if "status_containers" in st.session_state:
+                st.session_state.status_containers = {}
             st.rerun()
         
        
@@ -186,8 +192,10 @@ async def main() -> None:
 
         if st.button(":material/upload: Share/resume chat", use_container_width=True):
             share_chat_dialog()
-
-         # Delete chat history button
+            
+        #===============================================================================================================
+        # Delete chat history button (채팅 대화 내역, thread_id , status_containers 초기화)
+        #===============================================================================================================
         if st.button(":material/delete: Delete Chat History", use_container_width=True):
             try:
                 with st.spinner("Deleting chat history..."):
@@ -196,6 +204,10 @@ async def main() -> None:
                 # Clear the current messages and create a new thread
                 st.session_state.messages = []
                 st.session_state.thread_id = str(uuid.uuid4())
+
+                # StatusUpdate 컨테이너도 초기화
+                if "status_containers" in st.session_state:
+                    st.session_state.status_containers = {}
                 st.rerun()
             except AgentClientError as e:
                 st.error(f"Error deleting chat history: {e}")

@@ -7,7 +7,7 @@ from typing import Literal
 logger = logging.getLogger(__name__)
 
 
-#TODO : 코드 수정 필요 있음.
+
 def convert_message_content_to_string(content: str | list[str | dict]) -> str:
     """langchain의 BaseMessage 객체의 .content가 입력으로 전달 받으면 ChatMessage 객체의 content에 담을 문자열 파싱 
     단순 문자열인 경우 그대로 반환 , 
@@ -30,26 +30,55 @@ def convert_message_content_to_string(content: str | list[str | dict]) -> str:
     return "".join(text)
 
 def create_message(
-    type:Literal["ai" , "human" , "tool" , "custom"] , 
+    message_type:Literal["ai" , "human" , "tool" , "custom"] , 
     content: str , 
     metadata_type:Literal["text" , "image"] = "text" , 
-    images:list[str] | None = None
+    image_urls: list[str] | None = None,
+    metadata:dict | None = None,
     ) -> BaseMessage:
-    """Langchain의 AIMessage 객체를 생성하기 위해 필요한 content 리스트 형태로 변환"""
+    """Langchain의 AIMessage 객체를 생성하기 위해 필요한 content 리스트 형태로 변환
+
+    Args:
+        message_type (Literal["ai" , "human" , "tool" , "custom"]): 메세지 타입
+        content (str): 메세지 내용
+        metadata_type (Literal["text" , "image"]): 메타데이터 타입
+        image_urls (list[str] | None): 이미지 URL 리스트
+        metadata (dict | None): 메타데이터
+
+    Returns:
+        BaseMessage: BaseMessage 객체
+    Example: 
+        AIMessage(
+            content="요청하신 '강아지' 이미지입니다.",
+            additional_kwargs={
+                "type": "image",
+                "image_urls": ["s3://.../puppy-1.png"],
+                "metadata": {
+                    "role_id": "ai2",
+                    "display_name": "이미지 검색 AI",
+                }
+            }
+        )
+    
+    """
     #message 타입 확인
-    if type not in ["ai" , "human"]:
-        raise ValueError(f"Invalid message type: {type}")
+    if message_type not in ["ai" , "human" , "tool" , "custom"]:
+        raise ValueError(f"Invalid message type: {message_type}")
     if metadata_type not in ["text" , "image"]:
         raise ValueError(f"Invalid metadata type: {metadata_type}")
     additional_kwargs = {}
     additional_kwargs["type"] = metadata_type
-    if images:
-        additional_kwargs["images"] = images
-    match type:
+    if image_urls and metadata_type == "image":
+        additional_kwargs["image_urls"] = image_urls if isinstance(image_urls, list) else [image_urls]
+    if metadata:
+        additional_kwargs["metadata"] = metadata
+    match message_type:
         case "ai":
             return AIMessage(content=content , additional_kwargs=additional_kwargs)
         case "human":
             return HumanMessage(content=content , additional_kwargs=additional_kwargs)
+
+        
 
 
 def create_ai_message(parts: dict) -> AIMessage:
@@ -66,7 +95,7 @@ def create_ai_message(parts: dict) -> AIMessage:
     filtered = {k: v for k, v in parts.items() if k in valid_keys}
     return AIMessage(**filtered)
 
-#TODO : BaseMessage => ChatMessage 변환할때 additional_kwargs 필드에 type이 이미지인 경우에는 해당 이미지를 다운 받을 수 있는 presigned url 형식변환 과정 필요.
+
 def langchain_to_chat_message(message: BaseMessage) -> ChatMessage:
     """langchain의 BaseMessage를 pydantic 모델로 정의한 ChatMessage 으로 변환"""
     match message:
@@ -121,3 +150,4 @@ def remove_tool_calls(content:str | list[str | dict])-> str | list[str | dict]:
         for content_item in content
         if isinstance(content_item , str) or content_item.get("type") != "tool_use"
     ]
+

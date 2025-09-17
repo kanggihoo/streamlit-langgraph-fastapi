@@ -1,5 +1,4 @@
-from .chatbot import chatbot_graph
-
+from .chatbot import build_graph
 __all__ = [
-    "chatbot_graph",
+    "build_graph",
 ]

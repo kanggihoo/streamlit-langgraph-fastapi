@@ -2,7 +2,7 @@ from pydantic import BaseModel , Field , SerializeAsAny
 from typing import List, Optional , Annotated , Any , Literal , TypedDict , NotRequired
 
 from .llm_models import AllModelEnum , GoogleModelName , OpenAIModelName 
-
+from uuid import uuid4
 class AgentInfo(BaseModel):
     """Info about an available agent."""
 
@@ -137,7 +137,12 @@ class ChatHistory(BaseModel):
 
 
 class ServiceMetadata(BaseModel):
-    """사용자가 요청할 수 있는 agents 및 models 및 추가 메타정보를 담는 객체"""
+    """사용자가 요청할 수 있는 agents 및 models 및 추가 메타정보를 담는 객체
+    agents : 사용 가능한 agents 목록
+    models : 사용 가능한 models 목록
+    default_agent : 기본 agent
+    default_model : 기본 model
+    """
 
     agents: list[str] = Field(
         description="List of available agents.",
@@ -153,6 +158,31 @@ class ServiceMetadata(BaseModel):
         description="Default model used when none is specified.",
     )
 
+class StatusUpdate(BaseModel):
+    """특정 작업의 진행 상태를 클라이언트에 전달하기 위한 모델
+    task_id : 작업의 고유 ID. 동일한 작업의 시작과 종료를 매칭하는 데 사용됩니다.
+    state : 작업의 현재 상태 (시작, 종료, 진행중, 에러)
+    content : 사용자에게 보여줄 메시지 (예: '벡터 DB 검색 중...')
+    error_details : 에러 발생 시 추가적인 에러 정보를 담을 수 있는 필드
+    """
+    
+    task_id: Annotated[str, Field(default_factory=lambda: str(uuid4()) , description="작업의 고유 ID. 동일한 작업의 시작과 종료를 매칭하는 데 사용됩니다.") ]
+    
+    state: Literal["start", "end", "progress","error"] = Field(
+        description="작업의 현재 상태 (시작, 종료, 진행중, 에러)",
+        examples=["start", "end", "progress", "error"],
+    )
+    
+    content: str = Field(
+        description="사용자에게 보여줄 메시지 (예: '벡터 DB 검색 중...')",
+        examples=["벡터 DB 검색 중..."],
+    )
+    
+    # 에러 발생 시 추가적인 에러 정보를 담을 수 있는 필드
+    error_details: Optional[str] = None
+
+
 if __name__ == "__main__":
     message = ChatMessage(type="human", content="Hello, world!")
     message.pretty_print()
+

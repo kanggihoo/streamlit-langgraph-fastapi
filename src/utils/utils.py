@@ -1,18 +1,18 @@
+from tarfile import data_filter
 from langgraph.graph.state import CompiledStateGraph
 from langgraph.types import Command , Interrupt
 
-from langchain_core.messages import HumanMessage , AIMessageChunk , ToolMessage , AIMessage
+from langchain_core.messages import HumanMessage , AIMessageChunk , ToolMessage , AIMessage , BaseMessage
 from langchain_core.runnables import RunnableConfig
 
 from fastapi import HTTPException
-from model.type import SSETypes
 from typing import Any , AsyncGenerator
-from uuid import uuid4
 import logging
+from uuid import uuid4
 import json
 
-
-from model.schema import UserInput , StreamInput 
+from model.type import SSETypes
+from model.schema import UserInput , StreamInput , StatusUpdate , ChatMessage
 from .messages import (
     remove_tool_calls , 
     convert_message_content_to_string , 
@@ -67,7 +67,7 @@ async def handle_user_input(user_input:UserInput , agent:CompiledStateGraph)->tu
     if interrupted_task:
         input = Command(resume = user_input.message)
     else:
-        input = {"messages" : create_message("human" , user_input.message)}
+        input = {"messages" : create_message(message_type="human" , content=user_input.message)}
 
     kwargs = {
         "input" : input ,
@@ -106,9 +106,13 @@ async def message_generator(user_input:StreamInput , agent:CompiledStateGraph)->
             filtered_messages = [] # "updates" 모드에서 특정 노드의 결과를 포함할 메세지 리스트
             
             if stream_mode_type == "updates":
-                for node , updates in data.items():
+                #===============================================================================================================
+                # stream_mode == "updates" 인 경우 , data에는 특정 노드에서 업데이트 된 모든 정보를 dict로 담고 있음
+                # => 여기서는 해당 dict로 부터 "messages" 키에 있는 메세지 리스트 만을 추출해서 처리 
+                #===============================================================================================================
+                for node_name , updates in data.items():
                     # 인터럽트 처리 (대화 중단 시 인터럽트 메세지 처리)
-                    # if node == "__interrupt__" : 
+                    # if node_name == "__interrupt__" : 
                     #     interrupt: Interrupt
                     #     for interrupt in updates: # 인터럽트 노드에서에 뭘 반환하길레 intrrupt.value로 접근하지?
                     #         new_messages.append(AIMessage(content=interrupt.value))
@@ -118,25 +122,22 @@ async def message_generator(user_input:StreamInput , agent:CompiledStateGraph)->
                     updated_messages = updates.get("messages" , [])
 
 
-                    # node 이름에 따라 처리 (supervisor 노드의 도구 호출 결과가 필요한 경우만 처리, 나머지 중간노드 결과는 pass)
-                    if node == "supervisor" :
+                    # node_name 이름에 따라 처리 (supervisor 노드의 도구 호출 결과가 필요한 경우만 처리, 나머지 중간노드 결과는 pass)
+                    if node_name == "supervisor" :
                         if isinstance(updated_messages[-1] , ToolMessage): # tool 메세지만 필요 
                             updated_messages = [updated_messages[-1]]
                         else:
                             # 중간 노드 메세지 제거 
                             updated_messages = []
 
-                    if node in ("research_expert" , "math_expert"):
+                    if node_name in ("research_expert" , "math_expert"):
                         # 중간 노드 메세지 제거 
                         updated_messages = []
                     
                     filtered_messages.extend(updated_messages)
-            
-            # if stream_mode_type =="custom":
-            #     pass
 
             # updates 모드에서 사용자에게 결과 보여줄 메세지 추가 가공 (튜플 형식으로 제공되는 메세지인 경우(ChatMessage)는 분리 후 AIMessage 객체로 변환??)
-            processed_messages:list[AIMessage] = []
+            processed_messages:list[AIMessage | BaseMessage] = []
             current_message: dict[str, Any] = {}
             for message in filtered_messages:
                 if isinstance(message, tuple):
@@ -156,16 +157,25 @@ async def message_generator(user_input:StreamInput , agent:CompiledStateGraph)->
             
             #===============================================================================================================
             # SSE 응답에 대한 처리 (stream_mode_type == "updates" 인 경우) => {"type": "message", "content": ChatMessage}
+            # 1. langgraph에서 반환된 BaseMessage 객체를 ChatMessage 객체로 변환 (langchain_to_chat_message 함수 참고)
+            # 2. ChatMessage 객체를 SSE 응답 형식으로 변환
             # 사용자가 입력한 메세지는 다시 전송하지 않음.
             #===============================================================================================================
             for message in processed_messages:
                 try:
-                    chat_message = langchain_to_chat_message(message)
-                    chat_message.run_id = str(run_id)
+                    if isinstance(message, BaseMessage):
+                        chat_message = langchain_to_chat_message(message)
+                        chat_message.run_id = str(run_id)
+                    else:
+                        data = {
+                            "type" : "ai",
+                            "content" : message,
+                        }
+                        chat_message = ChatMessage.model_validate(data)
                 except Exception as e:
                     logger.error(f"Error parsing message: {e}")
                     yield f"data: {json.dumps({'type': SSETypes.ERROR.value, 'content': 'Unexpected error'})}\n\n"
-                    continue
+                    
 
                 # 사용자가 입력한 메세지를 다시 전송하는 것을 방지 
                 if chat_message.type == "human" and chat_message.content == user_input.message:
@@ -183,8 +193,11 @@ async def message_generator(user_input:StreamInput , agent:CompiledStateGraph)->
                 msg, metadata = data
                 if "skip_stream" in metadata.get("tags", []):
                     continue
-                # For some reason, astream("messages") causes non-LLM nodes to send extra messages.
-                # Drop them.
+                
+                #===============================================================================================================
+                # 특정 노드에서 BaseMessage 형태로 반환하는 경우 "updates" 모드와 "messages" 모드에서 모두 반환.
+                # 따라서 messages 모드에서는 AIMessageChunk 형태가 아닌 경우는 Drop 처리.
+                #===============================================================================================================
                 if not isinstance(msg, AIMessageChunk):
                     continue
                 content = remove_tool_calls(msg.content)
@@ -194,8 +207,23 @@ async def message_generator(user_input:StreamInput , agent:CompiledStateGraph)->
                     # So we only print non-empty content.
                     logger.info(f"stream_mode_type: messages인 경우 : {convert_message_content_to_string(content)}")
                     yield f"data: {json.dumps({'type': SSETypes.TOKEN.value, 'content': convert_message_content_to_string(content)})}\n\n"
+
+            #===============================================================================================================
+            # stream_mode_type == "custom" 인 경우 처리 (외부 LLM 스트리밍 결과 처리 및 writer를 이용해서 출력을 내보내는 경우 처리)
+            # 실제 데이터는 python dict 형식으로 {"type": "token" | "status" , "content": "데이터"} 형식으로 전달됨
+            # 이때 content 데이터는 StatusUpdate 모델 형식으로 전달됨
+            #===============================================================================================================
+            if stream_mode_type =="custom":
+                type , content = data["type"] , data["content"]
+                logger.info(f"stream_mode_type: custom인 경우 : {type} , {content}")
+                match type:
+                    case SSETypes.TOKEN.value:
+                        yield f"data: {json.dumps({'type': SSETypes.TOKEN.value, 'content': content})}\n\n"
+                    case SSETypes.STATUS.value:
+                        yield f"data: {json.dumps({'type': SSETypes.STATUS.value, 'content': content})}\n\n"
+                    
     except Exception as e:
         logger.error(f"Error in message generator: {e}")
         yield f"data: {json.dumps({'type': SSETypes.ERROR.value, 'content': 'Internal server error'})}\n\n"
     finally:
-        yield f"data: {SSETypes.END.value}\n\n"
+        yield f"data: {json.dumps({'type': SSETypes.END.value, 'content': ''})}\n\n"

@@ -1,6 +1,6 @@
 from fastapi import APIRouter , HTTPException
 from app.config.dependencies import DBConnectionDep
-from app.services.db_meta import DatabaseMetadataService
+from app.services.db_meta import database_metadata_service
 import asyncio
 router = APIRouter(prefix="/db" , tags=["db"])
 
@@ -8,15 +8,13 @@ router = APIRouter(prefix="/db" , tags=["db"])
 @router.get("/health")
 async def health_check(db_connection: DBConnectionDep):
     """데이터베이스 헬스체크"""
-    service = DatabaseMetadataService(db_connection)
-    return await service.health_check()
+    return await database_metadata_service.health_check(db_connection)
 
 @router.get("/connections")
 async def get_connection_info(db_connection: DBConnectionDep):
     """데이터베이스 연결 정보 조회"""
     try:
-        service = DatabaseMetadataService(db_connection)
-        return await service.get_connection_info()
+        return await database_metadata_service.get_connection_info(db_connection)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to get connection info: {str(e)}")
 
@@ -24,8 +22,7 @@ async def get_connection_info(db_connection: DBConnectionDep):
 async def get_database_info(db_connection: DBConnectionDep):
     """데이터베이스 기본 정보 조회"""
     try:
-        service = DatabaseMetadataService(db_connection)
-        return await service.get_database_info()
+        return await database_metadata_service.get_database_info(db_connection)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to get database info: {str(e)}")
 
@@ -33,8 +30,7 @@ async def get_database_info(db_connection: DBConnectionDep):
 async def get_table_statistics(db_connection: DBConnectionDep):
     """테이블 통계 정보 조회"""
     try:
-        service = DatabaseMetadataService(db_connection)
-        return await service.get_table_statistics()
+        return await database_metadata_service.get_table_statistics(db_connection)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to get table statistics: {str(e)}")
 
@@ -43,8 +39,7 @@ async def get_table_statistics(db_connection: DBConnectionDep):
 async def get_database_size_info(db_connection: DBConnectionDep):
     """데이터베이스 크기 정보 조회"""
     try:
-        service = DatabaseMetadataService(db_connection)
-        return await service.get_database_size_info()
+        return await database_metadata_service.get_database_size_info(db_connection)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to get database size info: {str(e)}")
 
@@ -53,17 +48,15 @@ async def get_database_size_info(db_connection: DBConnectionDep):
 async def get_database_dashboard(db_connection: DBConnectionDep):
     """데이터베이스 종합 대시보드 정보"""
     try:
-        service = DatabaseMetadataService(db_connection)
         
         # 여러 정보를 병렬로 수집
         health, connections, info, size = await asyncio.gather(
-            service.health_check(),
-            service.get_connection_info(),
-            service.get_database_info(),
-            service.get_database_size_info(),
+            database_metadata_service.health_check(db_connection),
+            database_metadata_service.get_connection_info(db_connection),
+            database_metadata_service.get_database_info(db_connection),
+            database_metadata_service.get_database_size_info(db_connection),
             return_exceptions=True
         )
-        
         return {
             "health": health if not isinstance(health, Exception) else {"error": str(health)},
             "connections": connections if not isinstance(connections, Exception) else {"error": str(connections)},

@@ -8,6 +8,7 @@ from model.schema import (
     AgentInfo,
     ServiceMetadata,
     UserInput,
+    StatusUpdate,
 )
 
 import httpx 
@@ -219,7 +220,11 @@ class AgentClient:
             request.user_id = user_id
         if agent_config:
             request.agent_config = agent_config
-        
+
+
+        #=====================================================================================================================================
+        # 스트리밍 모드로 요청을 받았을 때, Fastapi에게 전달할 요청 데이터 생성 및 stream 요청 및 응답 수신 후 stremalit에게 전달할 형식으로 데이터 전달(비동기 제너레이터)
+        #=====================================================================================================================================
         async with httpx.AsyncClient() as client:
             try:
                 async with client.stream(
@@ -228,6 +233,7 @@ class AgentClient:
                     json = request.model_dump(),
                     timeout=self.timeout,
                 ) as response:
+                    # print(f"stream response(client.py): {response}")
                     response.raise_for_status()
                     async for line in response.aiter_lines():
                         if line.strip(): # 데이터가 있는 경우 파싱
@@ -239,26 +245,30 @@ class AgentClient:
                 raise AgentClientError(f"Failed to stream agent: {e}")
     
     #===============================================================================================================
-    # SSE 응답에 대한 결과 문자열을 parsing 함수 (data: 키워드 제외 후 json 파싱 후 데이터 처리) => {"type": "message", "content": ChatMessage}
+    # SSE 응답에 대한 결과 문자열을 parsing 함수 (data: 키워드 제외 후 json 파싱 후 데이터 처리) 
+    # 0 : 다음과 같은 구조로 데이터 수신 {"type": "message", "content": ChatMessage | StatusUpdate | str}
+    #     1. type : message 인 경우 contnet = ChatMessage 
+    #     2. type : status 인 경우 content = StatusUpdate 객체
+    #     2. type : token | error | end 인 경우 content = 문자열
+    # 
+    # 수신한 데이터 paring 한 후 최종 반환 형식
     # 1. type : meesage 인 경우(langgraph stream_mode : updates인 경우) => ChatMessage 객체 반환
     # 2. type : token 인 경우(langgraph stream_mode : messages인 경우) => 문자열 반환(ChatMessage.content 내용만 반환)
+    # 3. type : status 인 경우(langgraph stream_mode : updates인 경우) => StatusUpdate 객체 반환
     # 3. type : error 인 경우 (langgraph stream_mode 과정에서 오류 발생한 경우) => ChatMessage 객체 반환
     #===============================================================================================================
-    def _parse_stream_line(self , line:str)->ChatMessage | str |None:
+    def _parse_stream_line(self , line:str)->ChatMessage | StatusUpdate |str| None:
         line = line.strip()
         if line.startswith("data: "):
             data = line[6:]
-
-            if data == SSETypes.END.value:
-                return None
-            
             try:
                 parsed:dict[str, Any] = json.loads(data)
             except Exception as e:
                 raise AgentClientError(f"Failed to parse stream line: {e}")
-            
-            #CHECK: 왜 여기서 type에 따라 동작이 다르게 되는거지?? 
+            # print("client.py : _parse_stream_line : parsed => " , parsed)
             match parsed["type"]:
+                case SSETypes.END.value:
+                    return None
                 case SSETypes.MESSAGE.value:
                     try:
                         return ChatMessage.model_validate(parsed["content"])
@@ -267,6 +277,11 @@ class AgentClient:
 
                 case SSETypes.TOKEN.value:
                     return parsed["content"]
+                case SSETypes.STATUS.value:
+                    try:
+                        return StatusUpdate.model_validate(parsed["content"])
+                    except Exception as e:
+                        raise Exception(f"Failed to parse stream line: {e}")
                 
                 case SSETypes.ERROR.value:
                     error_msg = "Error: " + parsed["content"]

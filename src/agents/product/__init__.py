@@ -1,5 +1,5 @@
-from .product import product_agent
+from .product import build_graph 
 
 __all__ = [
-    "product_agent",
+    "build_graph",
 ]
