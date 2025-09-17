@@ -56,6 +56,23 @@ class StreamInput(UserInput):
         default=True,
     )
 
+
+    model_config = {
+        "json_schema_extra": {
+            "examples": [
+                {
+                    "message": "의류 추천해줘",
+                    "model": GoogleModelName.GEMINI_20_FLASH_LITE.value,
+                    "thread_id": "847c6285-8fc9-4560-a83f-4e6285809254",
+                    "user_id": "847c6285-8fc9-4560-a83f-4e6285809254",
+                    "agent_config": {"spicy_level": 0.8},
+                    "stream_tokens": True,
+                }
+            ]
+        }
+    }
+    
+
 class ToolCall(TypedDict):
     """Represents a request to call a tool."""
 
@@ -138,14 +155,16 @@ class ChatHistory(BaseModel):
 
 class ServiceMetadata(BaseModel):
     """사용자가 요청할 수 있는 agents 및 models 및 추가 메타정보를 담는 객체
-    agents : 사용 가능한 agents 목록
-    models : 사용 가능한 models 목록
-    default_agent : 기본 agent
-    default_model : 기본 model
+    Args:
+        agents : 사용 가능한 agents 목록
+        models : 사용 가능한 models 목록
+        default_agent : 기본 agent
+        default_model : 기본 model
     """
 
     agents: list[str] = Field(
         description="List of available agents.",
+        examples=["chatbot", "product", "search", "external_llm", "llm_search"],
     )
     models: list[AllModelEnum] = Field(
         description="List of available LLMs.",
@@ -181,6 +200,39 @@ class StatusUpdate(BaseModel):
     # 에러 발생 시 추가적인 에러 정보를 담을 수 있는 필드
     error_details: Optional[str] = None
 
+
+class DeleteHistoryResponse(BaseModel):
+    """사용자 채팅 내역 삭제 응답 모델"""
+    success : Annotated[bool , "삭제 결과 성공 여부"]
+    message : Annotated[str , "삭제 결과 메시지"]
+    data : Annotated[dict[str, Any] , Field(default_factory=dict , description="삭제 결과 데이터")]
+    
+    model_config = {
+        "json_schema_extra": {
+            "examples": [
+                {
+                    "success": True,
+                    "message": "사용자 채팅 내역 삭제 완료",
+                    "data": {"thread_id": "847c6285-8fc9-4560-a83f-4e6285809254"}
+                }
+            ]
+        }
+    }
+
+
+class ErrorResponse(BaseModel):
+    """API 오류 응답 모델"""
+    detail: Annotated[str, Field(description="오류 상세 메시지")]
+    
+    model_config = {
+        "json_schema_extra": {
+            "examples": [
+                {
+                    "detail": "Unexpected error"
+                }
+            ]
+        }
+    }
 
 if __name__ == "__main__":
     message = ChatMessage(type="human", content="Hello, world!")

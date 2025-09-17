@@ -1,11 +1,11 @@
-from fastapi import Depends , Request  , HTTPException
+from fastapi import Depends , Request  , HTTPException , Path
 from langgraph.graph.state import CompiledStateGraph
 from typing import Annotated , AsyncGenerator , Any
 from wrapper import MusinsaAPIWrapper , VectorSearchAPIWrapper
 from psycopg import AsyncConnection
 from aws import S3Manager
-
-
+from agents import get_all_agent_info
+from app.docs import get_agents_openapi_examples
 import logging
 
 logger = logging.getLogger(__name__)
@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 #===============================================================================================================
 # 에이전트 관련 의존성 
 #===============================================================================================================
-def get_agent(request: Request , agent_name:str) -> CompiledStateGraph:
+def get_agent(request: Request , agent_name:Annotated[str, Path(...,description=f"사용할 에이전트 이름 \n 에이전트 목록 : {get_all_agent_info()}" , openapi_examples=get_agents_openapi_examples())] ) -> CompiledStateGraph:
     if agent_name not in request.app.state.agents:
         raise HTTPException(status_code=404, detail=f"Agent {agent_name} not found")
     return request.app.state.agents[agent_name]
