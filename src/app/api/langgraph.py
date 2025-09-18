@@ -172,7 +172,9 @@ async def stream_mock() -> StreamingResponse:
     """
     async def mock_sse_generator() -> AsyncGenerator[str, None]:
         mock_data_str = get_mock_sse_response()
+        print(f"mock_data_str: {mock_data_str}")
         for line in mock_data_str.split('\n\n'):
+            print(f"line: {line}")
             if line:
                 yield f"{line}\n\n"
                 await asyncio.sleep(0.1)
