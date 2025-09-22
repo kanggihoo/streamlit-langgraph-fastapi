@@ -42,7 +42,7 @@ class Settings(BaseSettings):
     MODE : Annotated[str, "Fastapi Server model로 reload 할때 사용"] = Field(default="")
     HOST : Annotated[str, "Fastapi Server host"] = Field(default="0.0.0.0")
     PORT : Annotated[int, "Fastapi Server port"] = Field(default=8001)
-    AGENT_ENDPOINT : Annotated[str, "Fastapi Server agent endpoint"] = Field(default="/api/langgraph")
+    AGENT_ENDPOINT : Annotated[str, "Fastapi Server agent endpoint"] = Field(default="/langgraph")
 
     # LLM API keys 
     GOOGLE_API_KEY : SecretStr | None = None
@@ -51,7 +51,7 @@ class Settings(BaseSettings):
     
     #기본적으로 사용할 LLM 모델 및 사용 가능한 LLM 모델 집합
     # DEFAULT_LLM_MODEL : AllModelEnum  = OpenRouterModelName.GEMINI_20_FLASH_LITE    
-    DEFAULT_LLM_MODEL : AllModelEnum  = GoogleModelName.GEMINI_20_FLASH_LITE   
+    DEFAULT_LLM_MODEL : AllModelEnum  = OpenRouterModelName.OPENROUTER_GEMINI_20_FLASH_LITE   
     AVAILABLE_LLM_MODELS : Annotated[set[AllModelEnum], "사용 가능한 모든 LLM 모델 집합"] = Field(default_factory=set)
 
     # Langsmith 

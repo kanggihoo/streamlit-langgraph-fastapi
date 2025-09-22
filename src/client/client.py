@@ -23,7 +23,7 @@ class AgentClient:
     """Client for interacting with the agent service."""
     def __init__(
         self,
-        base_url: str = "http://0.0.0.0/api/langgraph",
+        base_url: str = "http://0.0.0.0/langgraph",
         agent: str | None = None,
         timeout: float | None = None,
         get_info : bool = True,

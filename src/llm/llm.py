@@ -3,6 +3,7 @@ from langchain_openai import ChatOpenAI
 from langchain_google_genai import ChatGoogleGenerativeAI
 
 from typing import TypeAlias
+from settings import settings
 from model.llm_models import (
     AllModelEnum,
     GoogleModelName,
@@ -44,7 +45,9 @@ def get_llm_model(model_name : AllModelEnum) -> ModelT:
             streaming=True,
         )
     elif model_name_str in OpenRouterModelName:
+        print("model_name_str: " , model_name_str)
         return ChatOpenAI(
+            api_key=settings.OPENROUTER_API_KEY.get_secret_value(),
             model=model_name_str,
             base_url="https://openrouter.ai/api/v1/",
             temperature=0.0,
@@ -52,4 +55,4 @@ def get_llm_model(model_name : AllModelEnum) -> ModelT:
         )
     
     raise ValueError(f"Invalid model name: {model_name}")
-    
+

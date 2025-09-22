@@ -30,6 +30,8 @@ async def _call_external_streaming_llm(state: ExternalLLMState, http_session: ht
     text = state["messages"][-1].content
     writer = get_stream_writer()
     response_text = ""
+    #TODO : 각 전문가 연결
+    # color_expert, fitting_coordinater, style_anal
     external_agent_name = "style_analyst"
     
     content = StatusUpdate(

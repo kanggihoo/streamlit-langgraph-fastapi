@@ -7,8 +7,8 @@ from .product import build_graph as build_product_graph
 from .search import build_graph as build_search_graph
 from .external_llm import build_graph as build_external_llm_graph
 from .llm_search import build_graph as build_llm_search_graph
-
-DEFAULT_AGENT_NAME = "search"
+from .gather_info import build_graph as build_gather_info_graph
+DEFAULT_AGENT_NAME = "gather_info"
 
 agents = {
     'chatbot' : build_chatbot_graph,
@@ -16,6 +16,7 @@ agents = {
     'search' : build_search_graph,
     "external_llm" : build_external_llm_graph,
     "llm_search" : build_llm_search_graph,
+    "gather_info" : build_gather_info_graph,
 }
 
 def get_graph_builder(agent_name:str)->Callable[[httpx.AsyncClient | None],CompiledStateGraph]:

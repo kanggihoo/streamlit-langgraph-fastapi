@@ -60,9 +60,15 @@ async def lifespan(app:FastAPI):
 app = FastAPI(lifespan=lifespan)
 
 
-# @app.get("/")
-# async def root():
-#     return {"message": "Hello World"}
+from fastapi.security import OAuth2PasswordBearer
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
+from typing import Annotated
+from fastapi import Depends
+
+
+@app.get("/items/")
+async def read_items(token: Annotated[str, Depends(oauth2_scheme)]):
+    return {"token": token}
 
 app.include_router(router)
 

@@ -11,10 +11,10 @@ class LLMProvider(StrEnum):
 class GoogleModelName(StrEnum):
     """https://ai.google.dev/gemini-api/docs/models/gemini"""
 
-    GEMINI_15_PRO = "gemini-1.5-pro"
-    GEMINI_20_FLASH = "gemini-2.0-flash"
+    
     GEMINI_20_FLASH_LITE = "gemini-2.0-flash-lite"
     GEMINI_25_FLASH = "gemini-2.5-flash"
+    GEMINI_25_FLASH_LITE = "gemini-2.5-flash-lite"
     GEMINI_25_PRO = "gemini-2.5-pro"
 
 class OpenAIModelName(StrEnum):
@@ -24,9 +24,9 @@ class OpenAIModelName(StrEnum):
     GPT_4O = "gpt-4o"
 
 class OpenRouterModelName(StrEnum):
-    OPENROUTER_GPT_4O_MINI = "gpt-4o-mini"
-    OPENROUTER_GPT_4O = "gpt-4o"
-    OPENROUTER_GEMINI_20_FLASH_LITE = "gemini-2.0-flash-lite"
+    OPENROUTER_GPT_4O_MINI = "openai/gpt-4.1-nano"
+    OPENROUTER_GPT_4O = "openai/gpt-4.1-mini"
+    OPENROUTER_GEMINI_20_FLASH_LITE = "google/gemini-2.0-flash-lite-001"
 
 
 AllModelEnum: TypeAlias = (

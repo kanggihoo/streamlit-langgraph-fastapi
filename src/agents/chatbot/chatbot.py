@@ -22,6 +22,7 @@ async def chatbot(state:ChatbotState , config:RunnableConfig)->ChatbotState:
     
     print("chatbot 노드 시작")
     model : BaseChatModel = get_llm_model(config["configurable"].get("model" , settings.DEFAULT_LLM_MODEL))
+    print("model: " , model , settings.DEFAULT_LLM_MODEL)
     chain = chatbot_prompt | model 
     response = await chain.ainvoke({"messages":state["messages"]})
     response = create_message(message_type="ai", content=response.content)
