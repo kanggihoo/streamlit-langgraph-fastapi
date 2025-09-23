@@ -67,7 +67,7 @@ async def handle_user_input(user_input:UserInput , agent:CompiledStateGraph)->tu
     if interrupted_task:
         input = Command(resume = user_input.message)
     else:
-        input = {"messages" : create_message(message_type="human" , content=user_input.message)}
+        input = {"messages" : create_message(message_type="human" , content=user_input.message) , "user_message" : user_input.message , "experts_to_run" : ["color_expert" , "style_analyst" , "fitting_coordinator"]}
 
     kwargs = {
         "input" : input ,

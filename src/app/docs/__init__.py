@@ -109,161 +109,147 @@ ERROR_RESPONSES = {
 
 
 def get_mock_sse_response() -> str:
-    return '''data: {"type": "status", "content": {"task_id": "style_analyst", "state": "start", "content": "style_analyst 의류 조합 분석 시작", "error_details": null}}
+    return '''data: {"type": "status", "content": {"task_id": "color_expert", "state": "start", "content": "color_expert 의류 조합 분석 시작", "error_details": null}}
 
-data: {"type": "status", "content": {"task_id": "style_analyst", "state": "progress", "content": "착장 매칭 시작...", "error_details": null}}
+data: {"type": "status", "content": {"task_id": "color_expert", "state": "progress", "content": "착장 매칭 시작...", "error_details": null}}
 
-data: {"type": "status", "content": {"task_id": "style_analyst", "state": "progress", "content": "S3에서 착장 검색 중...", "error_details": null}}
+data: {"type": "status", "content": {"task_id": "color_expert", "state": "progress", "content": "S3에서 착장 검색 중...", "error_details": null}}
 
-data: {"type": "status", "content": {"task_id": "style_analyst", "state": "progress", "content": "S3 매칭 성공: 7개 착장 발견", "error_details": null}}
+data: {"type": "status", "content": {"task_id": "color_expert", "state": "progress", "content": "S3 매칭 성공: 11개 착장 발견", "error_details": null}}
 
-data: {"type": "status", "content": {"task_id": "style_analyst", "state": "progress", "content": "최종 착장 선택: c96192fc7e225468fbd88137717364ea", "error_details": null}}
+data: {"type": "status", "content": {"task_id": "color_expert", "state": "progress", "content": "최종 착장 선택: 9ff4b720fc20265b6252a99cc31af515", "error_details": null}}
 
-data: {"type": "status", "content": {"task_id": "style_analyst", "state": "progress", "content": "전문가 분석 시작...", "error_details": null}}
+data: {"type": "status", "content": {"task_id": "color_expert", "state": "progress", "content": "전문가 분석 시작...", "error_details": null}}
 
-data: {"type": "status", "content": {"task_id": "style_analyst", "state": "progress", "content": "Claude API 호출 중...", "error_details": null}}
+data: {"type": "status", "content": {"task_id": "color_expert", "state": "progress", "content": "Claude API 호출 중...", "error_details": null}}
 
-data: {"type": "token", "content": "베이"}
+data: {"type": "token", "content": "아"}
 
-data: {"type": "token", "content": "지 오버"}
+data: {"type": "token", "content": "이보리 니"}
 
-data: {"type": "token", "content": "핏 반"}
+data: {"type": "token", "content": "트 폴로 셔"}
 
-data: {"type": "token", "content": "팔 셔"}
+data: {"type": "token", "content": "츠에 화이트 "}
 
-data: {"type": "token", "content": "츠에 블랙 "}
+data: {"type": "token", "content": "좋아 데이트 때"}
 
-data: {"type": "token", "content": "와이드 "}
+data: {"type": "token", "content": " 쾌적하"}
 
-data: {"type": "token", "content": "슬랙스가"}
+data: {"type": "token", "content": "게 입을 "}
 
-data: {"type": "token", "content": " 잘 어"}
+data: {"type": "token", "content": "수 있을 "}
 
-data: {"type": "token", "content": "울려"}
+data: {"type": "token", "content": "정도의 "}
 
-data: {"type": "token", "content": "."}
+data: {"type": "token", "content": "밸런스를 "}
 
-data: {"type": "token", "content": " 셔츠 "}
+data: {"type": "token", "content": "갖췄어."}
 
-data: {"type": "token", "content": "앞부분만"}
+data: {"type": "status", "content": {"task_id": "color_expert", "state": "progress", "content": "전문가 분석 완료", "error_details": null}}
 
-data: {"type": "token", "content": " 살짝 "}
-
-data: {"type": "token", "content": "넣어서"}
-
-data: {"type": "token", "content": " 내"}
-
-data: {"type": "token", "content": "추럴한 분"}
-
-data: {"type": "token", "content": "위기를 연"}
-
-data: {"type": "token", "content": "출할"}
-
-data: {"type": "token", "content": " 수 있어"}
-
-data: {"type": "token", "content": "."}
-
-data: {"type": "token", "content": " 여"}
-
-data: {"type": "token", "content": "유있는"}
-
-data: {"type": "token", "content": " 실"}
-
-data: {"type": "token", "content": "루엣이"}
-
-data: {"type": "token", "content": " 세"}
-
-data: {"type": "token", "content": "련된 "}
-
-data: {"type": "token", "content": "캐주얼 "}
-
-data: {"type": "token", "content": "무드를 만"}
-
-data: {"type": "token", "content": "들어내"}
-
-data: {"type": "token", "content": "고,"}
-
-data: {"type": "token", "content": " 블랙 "}
-
-data: {"type": "token", "content": "옥스포드 "}
-
-data: {"type": "token", "content": "슈즈로"}
-
-data: {"type": "token", "content": " 포멀함"}
-
-data: {"type": "token", "content": "을 더"}
-
-data: {"type": "token", "content": "했어"}
-
-data: {"type": "token", "content": ". "}
-
-data: {"type": "token", "content": "셔츠 "}
-
-data: {"type": "token", "content": "상단 "}
-
-data: {"type": "token", "content": "버튼 "}
-
-data: {"type": "token", "content": "1-2개 "}
-
-data: {"type": "token", "content": "정도는 풀어두"}
-
-data: {"type": "token", "content": "면 더 자연스러"}
-
-data: {"type": "token", "content": "워. 브"}
-
-data: {"type": "token", "content": "라운 가"}
-
-data: {"type": "token", "content": "죽 서류가"}
-
-data: {"type": "token", "content": "방으로 포"}
-
-data: {"type": "token", "content": "인트를 주"}
-
-data: {"type": "token", "content": "면서도"}
-
-data: {"type": "token", "content": " 세련된 데"}
-
-data: {"type": "token", "content": "이트 룩"}
-
-data: {"type": "token", "content": "이 완성돼"}
-
-data: {"type": "token", "content": ". 발"}
-
-data: {"type": "token", "content": "목 길이 "}
-
-data: {"type": "token", "content": "슬랙스에"}
-
-data: {"type": "token", "content": "깔끔한 "}
-
-data: {"type": "token", "content": "옥스포드 "}
-
-data: {"type": "token", "content": "슈즈 "}
-
-data: {"type": "token", "content": "매치로"}
-
-data: {"type": "token", "content": " 다리"}
-
-data: {"type": "token", "content": "라인도"}
-
-data: {"type": "token", "content": " 길"}
-
-data: {"type": "token", "content": "어 "}
-
-data: {"type": "token", "content": "보여"}
-
-data: {"type": "token", "content": "."}
-
-data: {"type": "status", "content": {"task_id": "style_analyst", "state": "progress", "content": "전문가 분석 완료", "error_details": null}}
-
-data: {"type": "status", "content": {"task_id": "style_analyst", "state": "end", "content": "style_analyst 분석 완료", "error_details": null}}
-
-data: {"type": "message", "content": {"type": "ai", "content": "베이지 오버핏 반팔 셔츠에 블랙 와이드 슬랙스가 잘 어울려. 셔츠 앞부분만 살짝 넣어서 내추럴한 분위기를 연출할 수 있어. 여유있는 실루엣이 세련된 캐주얼 무드를 만들어내고, 블랙 옥스포드 슈즈로 포멀함을 더했어. 셔츠 상단 버튼 1-2개 정도는 풀어두면 더 자연스러워. 브라운 가죽 서류가방으로 포인트를 주면서도 세련된 데이트 룩이 완성돼. 발목 길이 슬랙스에깔끔한 옥스포드 슈즈 매치로 다리라인도 길어 보여.", "tool_calls": [], "tool_call_id": null, "run_id": "d54a8943-e754-4168-89d1-fb8a13eef8c8", "response_metadata": {}, "additional_kwargs": {"type": "text"}, "custom_data": {}}}
+data: {"type": "status", "content": {"task_id": "color_expert", "state": "end", "content": "color_expert 분석 완료", "error_details": null}}
 
 data: {"type": "status", "content": {"task_id": "search", "state": "start", "content": "이미지 검색 시작", "error_details": null}}
 
 data: {"type": "status", "content": {"task_id": "search", "state": "end", "content": "이미지 검색 완료!", "error_details": null}}
 
-data: {"type": "message", "content": {"type": "ai", "content": "이미지 검색을 진행했습니다. 관련 이미지 반환!", "tool_calls": [], "tool_call_id": null, "run_id": "d54a8943-e754-4168-89d1-fb8a13eef8c8", "response_metadata": {}, "additional_kwargs": {"type": "image", "image_urls": ["https://sw-fashion-image-data.s3.amazonaws.com/TOP/1002/4045199/segment/2_4.jpg?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=ASIAQKZOLTDISRDSPFYJ%2F20250916%2Fap-northeast-2%2Fs3%2Faws4_request&X-Amz-Date=20250916T114630Z&X-Amz-Expires=3600&X-Amz-SignedHeaders=host&X-Amz-Security-Token=IQoJb3JpZ2luX2VjEBAaDmFwLW5vcnRoZWFzdC0yIkgwRgIhAPzvky3krALthdi0oxqCsZdmBVenn3hjY3%2BcuK6DLzOqAiEApdc2k%2BsE1hBYR0Kb8qAE9WxBWq6Z7oSuvVcSYBzlpocq1QUIif%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FARAAGgwwMjMxODI2NzgyMjUiDBhqFpDWz7p24Z11qiqpBexveimPexSVHYFdIU8CpXVVue4oVk5as7SDeZqMvRuYdf97qMmTpUInfDJ%2FTOU2oxJRXBRV%2Fmqs%2FPC9II6XTIH2soSZzknG8VgBSvPZOJs3bK3VdFGNr2WdOw%2BiMsR08yZhjvUOZ01XBws%2FkprDAbHytywwtj94R2A5MIgqM%2B6ztpAgdGyZ7ceBYE3AjJIHMzMd0l1gr%2BS%2FDoVRp7IanoWOfuslhpxh%2BXaTYFLidT1oudOOPrvAApt98UbMymXMNSZ3DG1LRZw%2BB9oeGIAZcl5mtTzmHV%2B%2BESbE%2FLE6gxReGulgLEO9K0GlDbIfAPhoee%2BzufQe9LjgiWw6vTJvNlh%2FWFw%2FXbNuuhsVxCI4o4GAEWOTcPzaV9ONoPEjfaYZLOrpsl7YJgHUkT%2FCSw4qzsBGzgbDiEnmAX%2FbQnARfsp1fZ1Wk%2FOMWRwREOQL9CcO8XwEXoSJu82SPEz%2BNGtSuBy7Zt4sIV%2BB7MGsqDwoXn7RXmS5vmSo63t5hKkB%2B95%2BuZ2Uj0pz1mCk0IbOSfaYgBLvQBgoA5hlJrLnvGuTDLsLBdwyb5IaUTeSc4a6UhWjb4KQxhOl6BWO4v00QVTHrxkkWHcUHX2Vt4jfDN5mtG%2FBxsJp988Di5YBv%2BU2r74%2BsTZiMsKe%2FD9TmXWnFXy0ubekNMAY%2F9pWR24ydIo3baQKCF8a2KtqiRHseaZPZMI0FeQYtVvbB%2F9EwIdv%2FIj0j3fbnO4AsA7ybnX8jxApB8a042LqCYXYDUx8hrqtIx6cQjh68WxVSmNu%2BeAa0mkuTOzE7uLLnbqpHo71mNHXTaMHaR6nowEpP9CO7gaucTCSx0OBxcR5XLCk6Xr%2BKALB5BQ5eb3ntyxlup8m8BFgFyRi5uyg4DunNs8LvX9lccFqOvWxOdJ2e9FSTCHrKTGBjqwASJe%2B7l%2BhMW4qoVBpw1bWDCFlnQuE0r0Vv1rLrS%2BZ1D1IjkBF8VOe79j5WBLOPZBi5PBndZESimTiFdTJcpuZG9QH0Vb5iKpwPRi3NFHVcsGyi1DcR5aQkN99gTu5yRNAfJIfm%2B"]}}}
+data: {"type": "message", "content": {"type": "ai", "content": "아이보리 니트 폴로 셔츠에 화이트 와이드 슬랙스는 톤온톤 원리로 세련된 밝은 색상 조화를 이루고 있어. 베이지 클러치백에 브라운 로퍼로 포인트를 준 건 명도 대비를 활용한 거야. 여름철 메시 니트와 린넨 블렌드 소재는 통기성이 좋아 데이트 때 쾌적하게 입을 수 있을 정도의 밸런스를 갖췄어.", "tool_calls": [], "tool_call_id": null, "run_id": "5c1a5d2a-9ca6-44fb-979a-49e8556f25da", "response_metadata": {}, "additional_kwargs": {"type": "image", "created_at": "2025-09-23T06:59:52.279758+00:00", "image_urls": ["https://sw-fashion-image-data.s3.amazonaws.com/color_expert/1.png", "https://sw-fashion-image-data.s3.amazonaws.com/color_expert/2.png"],"metadata": {"expert_type": "style_analyst"}}, "custom_data": {}}}
+
+data: {"type": "status", "content": {"task_id": "style_analyst", "state": "start", "content": "style_analyst 의류 조합 분석 시작", "error_details": null}}
+
+data: {"type": "status", "content": {"task_id": "style_analyst", "state": "progress", "content": "착장 매칭 시작...", "error_details": null}}
+
+data: {"type": "status", "content": {"task_id": "style_analyst", "state": "progress", "content": "S3에서 착장 검색 중...", "error_details": null}}
+
+data: {"type": "status", "content": {"task_id": "style_analyst", "state": "progress", "content": "S3 매칭 성공: 11개 착장 발견", "error_details": null}}
+
+data: {"type": "status", "content": {"task_id": "style_analyst", "state": "progress", "content": "최종 착장 선택: aef3dbacc1076182e6e733fd3563f463", "error_details": null}}
+
+data: {"type": "status", "content": {"task_id": "style_analyst", "state": "progress", "content": "전문가 분석 시작...", "error_details": null}}
+
+data: {"type": "status", "content": {"task_id": "style_analyst", "state": "progress", "content": "Claude API 호출 중...", "error_details": null}}
+
+data: {"type": "token", "content": "네이"}
+
+data: {"type": "token", "content": "비 베이직 반"}
+
+data: {"type": "token", "content": "팔 셔"}
+
+data: {"type": "token", "content": "츠에 아이보리"}
+
+data: {"type": "token", "content": " 좋을 "}
+
+data: {"type": "token", "content": "거야. 위"}
+
+data: {"type": "token", "content": "쪽 단"}
+
+data: {"type": "token", "content": "풀어주면 더 자"}
+
+data: {"type": "token", "content": "연스러운 "}
+
+data: {"type": "token", "content": "데이트"}
+
+data: {"type": "token", "content": "룩이 될 "}
+
+data: {"type": "token", "content": "수 있어."}
+
+data: {"type": "status", "content": {"task_id": "style_analyst", "state": "progress", "content": "전문가 분석 완료", "error_details": null}}
+
+data: {"type": "status", "content": {"task_id": "style_analyst", "state": "end", "content": "style_analyst 분석 완료", "error_details": null}}
+
+data: {"type": "status", "content": {"task_id": "search", "state": "start", "content": "이미지 검색 시작", "error_details": null}}
+
+data: {"type": "status", "content": {"task_id": "search", "state": "end", "content": "이미지 검색 완료!", "error_details": null}}
+
+data: {"type": "message", "content": {"type": "ai", "content": "네이비 베이직 반팔 셔츠에 아이보리 와이드 슬랙스가 잘 어울려. 셔츠 앞부분만 살짝 넣어서 캐주얼하면서도 세련된 분위기를 낼 수 있어. 블랙 로퍼에 같은 컬러의 가방으로 포인트를 줘서 데이트 때 딱 적당한 스타일이야. 린넨 혼방 슬랙스라 여름에도 시원하게 입을 수 있고, 상의는 면 소재라 착용감도 좋을 거야. 위쪽 단추 1-2개 정도 풀어주면 더 자연스러운 데이트룩이 될 수 있어.", "tool_calls": [], ...}}
+
+data: {"type": "status", "content": {"task_id": "fitting_coordinator", "state": "start", "content": "fitting_coordinator 의류 조합 분석 시작", "error_details": null}}
+
+data: {"type": "status", "content": {"task_id": "fitting_coordinator", "state": "progress", "content": "착장 매칭 시작...", "error_details": null}}
+
+data: {"type": "status", "content": {"task_id": "fitting_coordinator", "state": "progress", "content": "S3에서 착장 검색 중...", "error_details": null}}
+
+data: {"type": "status", "content": {"task_id": "fitting_coordinator", "state": "progress", "content": "S3 매칭 성공: 11개 착장 발견", "error_details": null}}
+
+data: {"type": "status", "content": {"task_id": "fitting_coordinator", "state": "progress", "content": "선택 풀 부족, 전체 DB에서 랜덤 선택...", "error_details": null}}
+
+data: {"type": "status", "content": {"task_id": "fitting_coordinator", "state": "progress", "content": "최종 착장 선택: 68c0ecfd4bc513ccb0cb725e3821533d", "error_details": null}}
+
+data: {"type": "status", "content": {"task_id": "fitting_coordinator", "state": "progress", "content": "전문가 분석 시작...", "error_details": null}}
+
+data: {"type": "status", "content": {"task_id": "fitting_coordinator", "state": "progress", "content": "Claude API 호출 중...", "error_details": null}}
+
+data: {"type": "token", "content": "그"}
+
+data: {"type": "token", "content": "레이 블레이저에"}
+
+data: {"type": "token", "content": " 그레이 슬랙스"}
+
+data: {"type": "token", "content": "가 잘 어"}
+
+data: {"type": "token", "content": "울려. 세"}
+
+data: {"type": "token", "content": "련된 정장 "}
+
+data: {"type": "token", "content": "셋업으로 데이트"}
+
+data: {"type": "token", "content": "고, 넥타이는 "}
+
+data: {"type": "token", "content": "타이트하게"}
+
+data: {"type": "token", "content": " 매면 "}
+
+data: {"type": "token", "content": "돼."}
+
+data: {"type": "status", "content": {"task_id": "fitting_coordinator", "state": "progress", "content": "전문가 분석 완료", "error_details": null}}
+
+data: {"type": "status", "content": {"task_id": "fitting_coordinator", "state": "end", "content": "fitting_coordinator 분석 완료", "error_details": null}}
+
+data: {"type": "status", "content": {"task_id": "search", "state": "start", "content": "이미지 검색 시작", "error_details": null}}
+
+data: {"type": "status", "content": {"task_id": "search", "state": "end", "content": "이미지 검색 완료!", "error_details": null}}
+
+data: {"type": "message", "content": {"type": "ai", "content": "그레이 블레이저에 그레이 슬랙스가 잘 어울려. 세련된 정장 셋업으로 데이트에서 진중한 매력을 어필할 수 있어. 블랙 넥타이에 실버 시계로 포인트를 주고, 블랙 클래식 로퍼로 마무리하면 더욱 세련되지.\n\n블레이저는 어깨와 가슴 부분이 딱 맞게 입고, 위쪽 버튼 1-2개만 풀어서 자연스러운 느낌을 주는 게 좋아. 셔츠는 전체적으로 깔끔하게 넣어주고, 넥타이는 타이트하게 매면 돼.", "tool_calls": [], "tool_call_id": null, "run_id": "5c1a5d2a-9ca6-44fb-979a-49e8556f25da", "response_metadata": {}, "additional_kwargs": {"type": "image", "created_at": "2025-09-23T07:00:14.195157+00:00", "image_urls": ["https://sw-fashion-image-data.s3.amazonaws.com/fitting_coordinator/1.png", "https://sw-fashion-image-data.s3.amazonaws.com/fitting_coordinator/2.png"],"metadata": {"expert_type": "fitting_coordinator"}}, "custom_data": {}}}
 
 data: {"type": "[DONE]", "content": ""}
 '''

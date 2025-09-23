@@ -1,22 +1,21 @@
 import json
-from typing import AsyncGenerator
+from typing import AsyncGenerator, Literal
 import httpx
 from model.type import SSETypes, ExternalLLMNames
 from model.schema import StatusUpdate
 
 
-async def external_streaming_llm(text:str , api_end_point:str, httpx_client)->AsyncGenerator[str, None]:
+async def external_streaming_llm(text:str , api_end_point:str, httpx_client , expert_type:Literal["color_expert" , "style_anal" , "fitting_coordinater"])->AsyncGenerator[str, None]:
     """특정 노드에서 외부 LLM 스트리밍 결과를 반환하는 비동기 제너레이터"""
     headers = {
         "Accept": "text/event-stream",
         "Cache-Control": "no-cache",
         "Connection": "keep-alive"
     }
-    external_agent_name = "style_analyst"
     payload = {
         "user_input": text,
         "room_id": 0,
-        "expert_type": external_agent_name,
+        "expert_type": expert_type,
         "user_profile": {
             "additionalProp1": {}
         },
@@ -41,7 +40,7 @@ async def external_streaming_llm(text:str , api_end_point:str, httpx_client)->As
                     parsed = json.loads(data)
                     match parsed["type"]:
                         case "status":
-                            content = StatusUpdate(state="progress", content=parsed["message"] , task_id=external_agent_name).model_dump()
+                            content = StatusUpdate(state="progress", content=parsed["message"] , task_id=expert_type).model_dump()
                             yield f"data: {json.dumps({'type': SSETypes.STATUS.value, 'content': content})}\n\n"
                         case "content":
                             yield f"data: {json.dumps({'type': SSETypes.TOKEN.value, 'content': parsed['chunk'] })}\n\n"

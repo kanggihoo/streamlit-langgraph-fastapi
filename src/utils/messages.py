@@ -3,6 +3,7 @@ from model.schema import ChatMessage
 import logging
 import inspect 
 from typing import Literal
+from utils.time import get_current_utc_timestamp
 
 logger = logging.getLogger(__name__)
 
@@ -68,6 +69,7 @@ def create_message(
         raise ValueError(f"Invalid metadata type: {metadata_type}")
     additional_kwargs = {}
     additional_kwargs["type"] = metadata_type
+    additional_kwargs["created_at"] = get_current_utc_timestamp().isoformat()
     if image_urls and metadata_type == "image":
         additional_kwargs["image_urls"] = image_urls if isinstance(image_urls, list) else [image_urls]
     if metadata:

@@ -82,15 +82,12 @@ async def test_llm_search_streaming(http_client):
         # If external API is not available, we expect a graceful failure
         print(f"Expected potential failure due to external API: {e}")
 
-if __name__ == "__main__":
-    import asyncio
-    
-    async def run_tests():
-        async with httpx.AsyncClient() as client:
-            # Test graph building
-            graph = build_graph(client)
-            print("✓ Graph built successfully")
-            print(f"✓ Graph name: {graph.name}")
-            print(f"✓ Graph nodes: {list(graph.nodes.keys())}")
-            
-    asyncio.run(run_tests())
+
+def test_generate_graph_image(http_client):
+    graph = build_graph(http_client)
+    try:
+        from langchain_core.runnables.graph import MermaidDrawMethod
+        graph.get_graph(xray=True).draw_mermaid_png(output_file_path="images/llm_search.png", draw_method=MermaidDrawMethod.PYPPETEER)
+        print("\n그래프 이미지를 connect_i.png 파일로 저장했습니다.")
+    except Exception as e:
+        print(f"\n그래프 시각화 실패: {e}")
