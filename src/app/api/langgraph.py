@@ -185,3 +185,11 @@ async def stream_mock() -> StreamingResponse:
     )
 
 
+@router.get(
+    "/health",
+    summary="health check",
+)
+async def health_check() -> StreamingResponse:
+    """
+    """
+    return {"status": "ok"}
