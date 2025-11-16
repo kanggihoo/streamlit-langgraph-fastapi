@@ -7,22 +7,14 @@ requires-python = ">=3.12"
 dependencies = [
     "arq>=0.26.3",
     "boto3>=1.40.27",
-    "fastapi>=0.116.1",
-    "langchain-google-genai>=2.1.9",
-    "langchain-mcp-adapters>=0.1.9",
-    "langchain-openai>=0.3.30",
-    "langgraph>=0.6.6",
-    "langgraph-checkpoint-postgres>=2.0.23",
-    "mcp>=1.13.1",
+    "loguru>=0.7.3",
     "numpy>=2.3.2",
     "pandas>=2.3.1",
     "psycopg[binary,pool]>=3.2.10",
     "pydantic-settings>=2.10.1",
-    "pyppeteer>=2.0.0",
+    "pymongo>=4.13.2",
     "python-dotenv>=1.1.1",
     "redis>=5.3.1",
-    "streamlit>=1.48.1",
-    "uvicorn>=0.35.0",
 ]
 
 [dependency-groups]
@@ -37,3 +29,46 @@ addopts = [
     "-sv",
 ]
 asyncio_default_fixture_loop_scope = "function"
+
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+# ruff 설정 
+[tool.ruff]
+# 린터와 포맷터가 공통으로 사용하는 설정
+line-length = 150
+
+[tool.ruff.lint]
+select = [
+    "E",    # pycodestyle
+    "F",    # Pyflakes
+    "UP",   # pyupgrade
+    "SIM",  # flake8-simplify
+    "I",    # isort
+    "B",    # flake8-bugbear (추가 권장)
+]
+
+# 포맷터와 충돌하는 규칙들을 명시적으로 제외
+ignore = [
+    "E111", # indentation-with-invalid-multiple
+    "E114", # indentation-with-invalid-multiple-comment
+    "E117", # over-indented
+]
+
+[tool.ruff.format]
+# 포맷터 전용 설정
+quote-style = "single"
+indent-style = "space"
+docstring-code-format = true
+
+
+# pyright 설정 
+[tool.pyright]
+include = ["src"]
+extraPaths = ["src"]
+reportArgumentType = false
+executionEnvironments = [
+  { root = "src" },
+  { root = "examples/embedding_system" , extraPaths = ["examples/embedding_system" , "src/"]}
+]

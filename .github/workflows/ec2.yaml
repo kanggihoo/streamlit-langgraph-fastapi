@@ -9,13 +9,6 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    env:
-      DB_ENV: "cloud"
-      POSTGRES_USER: "postgres.mrnvymnblankzratdavt"
-      POSTGRES_HOST: "aws-1-ap-northeast-2.pooler.supabase.com"
-      POSTGRES_PORT: "6543"
-      POSTGRES_DB: "postgres"
-      HOST: "0.0.0.0" # HOST 변수 추가
 
     steps:
     - name: Checkout code
@@ -28,18 +21,16 @@ jobs:
         username: ${{ secrets.LANGGRAPH_EC2_USERNAME }}
         key: ${{ secrets.LANGGRAPH_EC2_SSH_KEY }}
         script: |
-          # --- 변수 설정 ---
+          # --- 변수 설정 (Worker 배포용) ---
           BRANCH_NAME="${{ github.ref_name }}"
           HOME_DIR="/home/${{ secrets.LANGGRAPH_EC2_USERNAME }}"
           PROJECT_DIR="${HOME_DIR}/SW-project"
           REPO_URL="https://github.com/kanggihoo/streamlit-langgraph-fastapi.git"
-          FASTAPI_SERVICE_NAME="fastapi-server.service"
-          STREAMLIT_SERVICE_NAME="streamlit-server.service"
-          FASTAPI_PORT=8001
-          STREAMLIT_PORT=8501
+          SERVICE_NAME="taskqueue-worker.service"
+          
 
           echo "================================================="
-          echo "🚀 듀얼 서버 배포 시작: $(date)"
+          echo "Worker 서버 배포 시작: $(date)"
           echo "BRANCH: ${BRANCH_NAME}"
           echo "PROJECT_DIR: ${PROJECT_DIR}"
           echo "================================================="
@@ -85,38 +76,31 @@ jobs:
           uv sync
           echo "✅ 가상환경 및 의존성 설정 완료."
 
-          # --- 기존 서비스 중지 및 포트 정리 ---
-          echo "🔄 기존 서비스를 중지하고 포트를 정리합니다..."
-          sudo systemctl stop ${FASTAPI_SERVICE_NAME} || true
-          sudo systemctl stop ${STREAMLIT_SERVICE_NAME} || true
-          sudo lsof -ti:${FASTAPI_PORT} | xargs -r sudo kill -9 || true
-          sudo lsof -ti:${STREAMLIT_PORT} | xargs -r sudo kill -9 || true
-          sleep 3
-          echo "✅ 서비스 중지 및 포트 정리 완료."
-
+          # --- 기존 Worker 서비스 중지 (재배포 대비) ---
+          echo "🔄 기존 Worker 서비스를 중지합니다 (실행 중인 경우)..."
+          if sudo systemctl is-active --quiet ${SERVICE_NAME}; then
+              sudo systemctl stop ${SERVICE_NAME}
+              echo "✅ 기존 Worker 서비스를 중지했습니다."
+          else
+              echo "ℹ️ 실행 중인 Worker 서비스가 없습니다."
+          fi
+          
           # --- 환경 변수 (.env) 파일 생성/업데이트 ---
-          echo "🔑 환경 변수 파일(.env)을 생성/업데이트합니다..."
+          echo "🔑 Worker용 환경 변수 파일(.env)을 생성/업데이트합니다..."
           cat << EOF > "$PROJECT_DIR/.env"
-          OPENAI_API_KEY="${{ secrets.OPENAI_API_KEY }}"
-          GOOGLE_API_KEY="${{ secrets.GOOGLE_API_KEY }}"
-          OPENROUTER_API_KEY="${{ secrets.OPENROUTER_API_KEY }}"
-          POSTGRES_PASSWORD="${{ secrets.POSTGRES_PASSWORD }}"
+          REDIS_HOST="${{ env.REDIS_HOST }}"
+          REDIS_PORT="${{ env.REDIS_PORT }}"
+          MONGODB_ATLAS_URI="${{ secrets.MONGODB_ATLAS_URI }}"
 
-          DB_ENV="${{ env.DB_ENV }}"
-          POSTGRES_USER="${{ env.POSTGRES_USER }}"
-          POSTGRES_HOST="${{ env.POSTGRES_HOST }}"
-          POSTGRES_PORT="${{ env.POSTGRES_PORT }}"
-          POSTGRES_DB="${{ env.POSTGRES_DB }}"
-          HOST="${{ env.HOST }}"
           EOF
           chmod 600 "$PROJECT_DIR/.env"
           echo "✅ 환경 변수 파일 생성 완료."
           
-          # --- FastAPI systemd 서비스 파일 생성 ---
-          echo "⚙️ FastAPI systemd 서비스 파일을 생성합니다..."
-          cat << EOF > "${HOME_DIR}/temp-fastapi.service"
+          # --- ARQ Worker systemd 서비스 파일 생성/업데이트 ---
+          echo "⚙️ ARQ Worker용 systemd 서비스 파일을 생성/업데이트합니다..."
+          cat << EOF > "${HOME_DIR}/temp-${SERVICE_NAME}"
           [Unit]
-          Description=FastAPI Server for SW-project
+          Description=ARQ Task Queue Worker for SW-project
           After=network.target
 
           [Service]
@@ -124,76 +108,39 @@ jobs:
           Group=$(id -gn ${{ secrets.LANGGRAPH_EC2_USERNAME }})
           WorkingDirectory=${PROJECT_DIR}
           EnvironmentFile=${PROJECT_DIR}/.env
-          ExecStart=${HOME_DIR}/.local/bin/uv run python3 src/run_server.py
+          ExecStart=${PROJECT_DIR}/.venv/bin/arq src.taskqueue.worker.WorkerSettings
           Restart=always
           RestartSec=10
 
           [Install]
           WantedBy=multi-user.target
           EOF
-          sudo mv "${HOME_DIR}/temp-fastapi.service" "/etc/systemd/system/${FASTAPI_SERVICE_NAME}"
-          sudo chmod 644 "/etc/systemd/system/${FASTAPI_SERVICE_NAME}"
-          echo "✅ FastAPI 서비스 파일 생성 완료."
+          sudo mv "${HOME_DIR}/temp-${SERVICE_NAME}" "/etc/systemd/system/${SERVICE_NAME}"
+          sudo chmod 644 "/etc/systemd/system/${SERVICE_NAME}"
+          echo "✅ ARQ Worker 서비스 파일 생성/업데이트 완료."
 
-          # --- Streamlit systemd 서비스 파일 생성 ---
-          echo "🎨 Streamlit systemd 서비스 파일을 생성합니다..."
-          cat << EOF > "${HOME_DIR}/temp-streamlit.service"
-          [Unit]
-          Description=Streamlit Server for SW-project
-          After=network.target
-
-          [Service]
-          User=${{ secrets.LANGGRAPH_EC2_USERNAME }}
-          Group=$(id -gn ${{ secrets.LANGGRAPH_EC2_USERNAME }})
-          WorkingDirectory=${PROJECT_DIR}
-          EnvironmentFile=${PROJECT_DIR}/.env
-          ExecStart=${PROJECT_DIR}/.venv/bin/streamlit run src/streamlit_app.py --server.port ${STREAMLIT_PORT} --server.headless true
-          Restart=always
-          RestartSec=10
-
-          [Install]
-          WantedBy=multi-user.target
-          EOF
-          sudo mv "${HOME_DIR}/temp-streamlit.service" "/etc/systemd/system/${STREAMLIT_SERVICE_NAME}"
-          sudo chmod 644 "/etc/systemd/system/${STREAMLIT_SERVICE_NAME}"
-          echo "✅ Streamlit 서비스 파일 생성 완료."
 
           # --- systemd 서비스 재로드, 활성화 및 재시작 ---
-          echo "🔄 systemd 데몬을 재로드하고 두 서비스를 활성화 및 재시작합니다..."
+          echo "🔄 systemd 데몬을 재로드하고 Worker 서비스를 활성화 및 재시작합니다..."
           sudo systemctl daemon-reload
-          sudo systemctl enable ${FASTAPI_SERVICE_NAME}
-          sudo systemctl enable ${STREAMLIT_SERVICE_NAME}
-          sudo systemctl restart ${FASTAPI_SERVICE_NAME}
-          sudo systemctl restart ${STREAMLIT_SERVICE_NAME}
-          echo "✅ 두 서비스에 대한 재시작 명령을 실행했습니다."
+          sudo systemctl enable ${SERVICE_NAME}
+          sudo systemctl restart ${SERVICE_NAME}
+          echo "✅ Worker 서비스 재시작 명령을 실행했습니다."
 
-          # --- 서비스 상태 확인 ---
+          # --- Worker 서비스 상태 확인 ---
           sleep 5
-          echo "🔍 서비스 상태를 확인합니다..."
+          echo "🔍 Worker 서비스 상태를 확인합니다..."
           
-          # FastAPI 서버 상태 확인
-          if sudo systemctl is-active --quiet ${FASTAPI_SERVICE_NAME}; then
-              echo "🎉 (1/2) FastAPI 서버가 성공적으로 시작되었습니다!"
-              echo "   - 주소: http://${{ secrets.LANGGRAPH_EC2_HOST }}:${FASTAPI_PORT}"
+          if sudo systemctl is-active --quiet ${SERVICE_NAME}; then
+              echo "🎉 Worker 서비스가 성공적으로 시작되었습니다!"
           else
-              echo "❌ (1/2) FastAPI 서버 시작에 실패했습니다."
-              echo "--- FastAPI 최근 로그 50줄 ---"
-              sudo journalctl -u ${FASTAPI_SERVICE_NAME} --no-pager -n 50
-              exit 1
-          fi
-
-          # Streamlit 서버 상태 확인
-          if sudo systemctl is-active --quiet ${STREAMLIT_SERVICE_NAME}; then
-              echo "🎉 (2/2) Streamlit 서버가 성공적으로 시작되었습니다!"
-              echo "   - 주소: http://${{ secrets.LANGGRAPH_EC2_HOST }}:${STREAMLIT_PORT}"
-          else
-              echo "❌ (2/2) Streamlit 서버 시작에 실패했습니다."
-              echo "--- Streamlit 최근 로그 50줄 ---"
-              sudo journalctl -u ${STREAMLIT_SERVICE_NAME} --no-pager -n 50
+              echo "❌ Worker 서비스 시작에 실패했습니다."
+              echo "--- Worker 서비스 최근 로그 50줄 ---"
+              sudo journalctl -u ${SERVICE_NAME} --no-pager -n 50
               exit 1
           fi
 
           echo "================================================="
-          echo "✅ 모든 배포가 성공적으로 완료되었습니다: $(date)"
+          echo "✅ Worker 서버 배포가 성공적으로 완료되었습니다: $(date)"
           echo "================================================="
 
