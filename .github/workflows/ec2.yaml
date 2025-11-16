@@ -108,6 +108,7 @@ jobs:
           Group=$(id -gn ${{ secrets.LANGGRAPH_EC2_USERNAME }})
           WorkingDirectory=${PROJECT_DIR}
           EnvironmentFile=${PROJECT_DIR}/.env
+          Environment=PYTHONPATH=${PROJECT_DIR}/src
           ExecStart=${PROJECT_DIR}/.venv/bin/arq src.taskqueue.worker.WorkerSettings
           Restart=always
           RestartSec=10
