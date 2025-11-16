@@ -87,9 +87,10 @@ jobs:
           
           # --- 환경 변수 (.env) 파일 생성/업데이트 ---
           echo "🔑 Worker용 환경 변수 파일(.env)을 생성/업데이트합니다..."
+
           cat << EOF > "$PROJECT_DIR/.env"
-          REDIS_HOST="${{ env.REDIS_HOST }}"
-          REDIS_PORT="${{ env.REDIS_PORT }}"
+          REDIS_HOST="${{ secrets.REDIS_HOST }}"
+          REDIS_PORT="${{ secrets.REDIS_PORT }}"
           MONGODB_ATLAS_URI="${{ secrets.MONGODB_ATLAS_URI }}"
 
           EOF
