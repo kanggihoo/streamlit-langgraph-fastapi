@@ -55,16 +55,16 @@ class RedisCacheClient:
             await self._pool.aclose()
             self._pool = None
 
-    def _make_key(self, key: str) -> str:
-        """Add prefix to key.
+    # def _make_key(self, key: str) -> str:
+    #     """Add prefix to key.
 
-        Args:
-            key: Original key name
+    #     Args:
+    #         key: Original key name
 
-        Returns:
-            Prefixed key name
-        """
-        return f'{self._settings.KEY_PREFIX}{key}'
+    #     Returns:
+    #         Prefixed key name
+    #     """
+    #     return f'{self._settings.KEY_PREFIX}{key}'
 
     async def set(
         self,
@@ -89,11 +89,10 @@ class RedisCacheClient:
             raise RuntimeError('Redis client not connected. Call connect() first.')
 
         try:
-            final_key = self._make_key(key)
             final_value = json.dumps(value) if serialize else value
             ttl_seconds = ttl if ttl is not None else self._settings.DEFAULT_TTL
 
-            await self._client.set(final_key, final_value, ex=ttl_seconds)
+            await self._client.set(key, final_value, ex=ttl_seconds)
             return True
         except (RedisError, TypeError, ValueError) as e:
             logger.error(f'Failed to set cache key {key}: {e}')
@@ -118,14 +117,13 @@ class RedisCacheClient:
             raise RuntimeError('Redis client not connected. Call connect() first.')
 
         try:
-            final_key = self._make_key(key)
-            value = await self._client.get(final_key)
+            value = await self._client.get(key)
 
             if value is None:
-                logger.info(f'Cache MISS: {final_key}')
+                logger.info(f'Cache MISS: {key}')
                 return None
 
-            logger.info(f'Cache HIT: {final_key}')
+            logger.info(f'Cache HIT: {key}')
             return json.loads(value) if deserialize else value
         except (RedisError, json.JSONDecodeError) as e:
             logger.error(f'Failed to get cache key {key}: {e}')
@@ -144,8 +142,7 @@ class RedisCacheClient:
             raise RuntimeError('Redis client not connected. Call connect() first.')
 
         try:
-            final_key = self._make_key(key)
-            result = await self._client.delete(final_key)
+            result = await self._client.delete(key)
             return result > 0
         except RedisError as e:
             logger.error(f'Failed to delete cache key {key}: {e}')
@@ -164,8 +161,7 @@ class RedisCacheClient:
             raise RuntimeError('Redis client not connected. Call connect() first.')
 
         try:
-            final_key = self._make_key(key)
-            result = await self._client.exists(final_key)
+            result = await self._client.exists(key)
             return result > 0
         except RedisError as e:
             logger.error(f'Failed to check cache key {key}: {e}')
@@ -185,9 +181,8 @@ class RedisCacheClient:
             raise RuntimeError('Redis client not connected. Call connect() first.')
 
         try:
-            final_key = self._make_key(key)
-            result = await self._client.expire(final_key, ttl)
-            logger.debug(f'Cache EXPIRE: {final_key} (ttl={ttl}s)')
+            result = await self._client.expire(key, ttl)
+            logger.debug(f'Cache EXPIRE: {key} (ttl={ttl}s)')
             return result
         except RedisError as e:
             logger.error(f'Failed to set expiration for cache key {key}: {e}')
@@ -225,14 +220,13 @@ class RedisCacheClient:
             raise RuntimeError('Redis client not connected. Call connect() first.')
 
         try:
-            final_pattern = self._make_key(pattern)
             keys = []
-            async for key in self._client.scan_iter(match=final_pattern):
+            async for key in self._client.scan_iter(match=pattern):
                 keys.append(key)
 
             if keys:
                 deleted = await self._client.delete(*keys)
-                logger.info(f'Cache CLEAR: deleted {deleted} keys matching {final_pattern}')
+                logger.info(f'Cache CLEAR: deleted {deleted} keys matching {pattern}')
                 return deleted
             return 0
         except RedisError as e:
@@ -263,17 +257,16 @@ class RedisCacheClient:
             raise RuntimeError('Redis client not connected. Call connect() first.')
 
         try:
-            final_key = self._make_key(key)
             # Use Redis JSON.SET command
-            await self._client.json().set(final_key, path, value)
+            await self._client.json().set(key, path, value)
 
             # Set TTL if provided
             if ttl is not None:
-                await self._client.expire(final_key, ttl)
+                await self._client.expire(key, ttl)
             elif self._settings.DEFAULT_TTL:
-                await self._client.expire(final_key, self._settings.DEFAULT_TTL)
+                await self._client.expire(key, self._settings.DEFAULT_TTL)
 
-            logger.debug(f'JSON SET: {final_key} at path {path}')
+            logger.debug(f'JSON SET: {key} at path {path}')
             return True
         except (RedisError, TypeError, ValueError) as e:
             logger.error(f'Failed to set JSON key {key}: {e}')
@@ -297,14 +290,13 @@ class RedisCacheClient:
             raise RuntimeError('Redis client not connected. Call connect() first.')
 
         try:
-            final_key = self._make_key(key)
-            value = await self._client.json().get(final_key, path)
+            value = await self._client.json().get(key, path)
 
             if value is None:
-                logger.info(f'JSON Cache MISS: {final_key}')
+                logger.info(f'JSON Cache MISS: {key}')
                 return None
 
-            logger.info(f'JSON Cache HIT: {final_key}')
+            logger.info(f'JSON Cache HIT: {key}')
             # JSONPath '$' returns a list, get first element if path is '$'
             if path == '$' and isinstance(value, list) and len(value) > 0:
                 return value[0]
@@ -331,8 +323,7 @@ class RedisCacheClient:
             raise RuntimeError('Redis client not connected. Call connect() first.')
 
         try:
-            final_keys = [self._make_key(key) for key in keys]
-            values = await self._client.json().mget(final_keys, path)
+            values = await self._client.json().mget(keys, path)
 
             # JSONPath '$' returns a list, unwrap if needed
             if path == '$':
@@ -360,9 +351,8 @@ class RedisCacheClient:
             raise RuntimeError('Redis client not connected. Call connect() first.')
 
         try:
-            final_key = self._make_key(key)
-            result = await self._client.json().delete(final_key, path)
-            logger.debug(f'JSON DELETE: {final_key} at path {path}')
+            result = await self._client.json().delete(key, path)
+            logger.debug(f'JSON DELETE: {key} at path {path}')
             return result > 0
         except RedisError as e:
             logger.error(f'Failed to delete JSON key {key}: {e}')
@@ -388,9 +378,8 @@ class RedisCacheClient:
             raise RuntimeError('Redis client not connected. Call connect() first.')
 
         try:
-            final_key = self._make_key(key)
-            result = await self._client.json().arrappend(final_key, path, *values)
-            logger.debug(f'JSON ARRAPPEND: {final_key} at path {path}')
+            result = await self._client.json().arrappend(key, path, *values)
+            logger.debug(f'JSON ARRAPPEND: {key} at path {path}')
             # Result is a list of lengths for each matched path
             return result[0] if isinstance(result, list) and len(result) > 0 else result
         except RedisError as e:
@@ -415,8 +404,7 @@ class RedisCacheClient:
             raise RuntimeError('Redis client not connected. Call connect() first.')
 
         try:
-            final_key = self._make_key(key)
-            result = await self._client.json().objkeys(final_key, path)
+            result = await self._client.json().objkeys(key, path)
             # Result is a list of key lists for each matched path
             if isinstance(result, list) and len(result) > 0:
                 return result[0]
@@ -443,8 +431,7 @@ class RedisCacheClient:
             raise RuntimeError('Redis client not connected. Call connect() first.')
 
         try:
-            final_key = self._make_key(key)
-            result = await self._client.json().type(final_key, path)
+            result = await self._client.json().type(key, path)
             # Result is a list of types for each matched path
             if isinstance(result, list) and len(result) > 0:
                 return result[0]
