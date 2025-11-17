@@ -44,7 +44,7 @@ class AsyncFashionRepository(BaseAsyncRepository):
             return None
 
     @override
-    async def update_by_id(self, doc_id: str, update_data: dict) -> tuple[int, int]:
+    async def update_by_id(self, doc_id: str, update_data: dict, upsert: bool = False) -> tuple[int, int]:
         """
         업데이트를 시도하고 (matched_count, modified_count)를 반환합니다.
         오류 발생 시 (-1, -1)을 반환합니다.
@@ -54,7 +54,7 @@ class AsyncFashionRepository(BaseAsyncRepository):
             return 0, 0
 
         try:
-            result = await self.collection.update_one({'_id': doc_id}, {'$set': update_data})
+            result = await self.collection.update_one({'_id': doc_id}, {'$set': update_data}, upsert=upsert)
             return result.matched_count, result.modified_count
 
         except Exception as e:
@@ -182,3 +182,22 @@ class AsyncFashionRepository(BaseAsyncRepository):
         except Exception as e:
             logger.error(f"Error removing field '{field_name}': {e}")
             raise
+
+    async def get_product_description_info(self, product_id: str) -> str | None:
+        """
+        products.product_id를 사용하여 해당 상품의 description_info를 비동기적으로 조회합니다.
+
+        """
+        try:
+            # products.product_id로 문서를 찾고, products.description_info 필드만 프로젝션합니다.
+            # find_one을 사용하여 하나의 문서만 가져옵니다.
+            document = await self.collection.find_one(
+                {'products.product_id': product_id},
+                projection={'products.description_info': 1, '_id': 0},
+            )
+            if document and 'products' in document and 'description_info' in document['products']:
+                return document['products']['description_info']
+            return None
+        except Exception as e:
+            logger.error(f'Error getting description_info for product_id {product_id}: {e}')
+            raise Exception(f'Error getting description_info for product_id {product_id}: {e}') from e
